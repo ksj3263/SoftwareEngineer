@@ -46,6 +46,7 @@ public class Client extends JFrame implements ActionListener{
 	private Socket socket;
 	private String ip;
 	private int port;
+	private String id="";
 	private InputStream is;
 	private OutputStream os;
 	private DataInputStream dis;
@@ -206,15 +207,25 @@ public class Client extends JFrame implements ActionListener{
 			
 		}
 		
-		Send_message("login user");
+		Send_message(id);
 		
-		String msg="";
-		try {
-			msg=dis.readUTF();
-			System.out.println("message from server : " + msg);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		Thread th=new Thread(new Runnable()	{
+			
+			@Override
+			public void run() {
+				while(true)
+				{
+					try {
+						String msg=dis.readUTF();
+						System.out.println("message from server : "+msg);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					
+				}
+			}
+			
+		});
 	}
 	
 	private void Send_message(String str) // send message to server
@@ -239,6 +250,7 @@ public class Client extends JFrame implements ActionListener{
 			System.out.println("logint button click");
 			ip=ip_tf.getText().trim();
 			port=Integer.parseInt(port_tf.getText().trim());
+			id=id_tf.getText().trim();
 			Network();
 		}
 		else if(e.getSource()==notesend_btn)
@@ -255,6 +267,7 @@ public class Client extends JFrame implements ActionListener{
 		}
 		else if(e.getSource()==send_btn)
 		{
+			Send_message("test");
 			System.out.println("send button click");
 		}
 	}

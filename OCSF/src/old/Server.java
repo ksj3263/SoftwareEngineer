@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
+import java.util.Vector;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -30,10 +31,7 @@ public class Server extends JFrame implements ActionListener{
 	private ServerSocket server_socket;
 	private Socket socket;
 	private int port;
-	private InputStream is;
-	private OutputStream os;
-	private DataInputStream dis;
-	private DataOutputStream dos;
+	private Vector user_vc=new Vector();
 	
 	Server()
 	{
@@ -105,30 +103,18 @@ public class Server extends JFrame implements ActionListener{
 			
 			@Override
 			public void run() {
-				try {
-					textArea.append("waiting user connection\n");
-					socket=server_socket.accept();
-					textArea.append("connection success!!!!\n");
-					
-					try
-					{
-						is=socket.getInputStream();
-						dis=new DataInputStream(is);
-					
-						os=socket.getOutputStream();
-						dos=new DataOutputStream(os);
-					}
-					catch(IOException e)
-					{
+				while(true)	{
+					try {
+						textArea.append("waiting user connection\n");
+						socket=server_socket.accept();
+						textArea.append("connection success!!!!\n");
 						
+						UserInfo user=new UserInfo(socket);
+						user.start();
+						
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
-					
-					String msg="";
-					msg=dis.readUTF(); //message from user
-					textArea.append(msg);
-					dos.writeUTF("connection check");
-				} catch (IOException e) {
-					e.printStackTrace();
 				}
 			}
 		});
@@ -152,6 +138,57 @@ public class Server extends JFrame implements ActionListener{
 		}
 		else if(e.getSource()==stop_btn){
 			System.out.println("stop btn click");
+		}
+	}
+	
+	class UserInfo extends Thread
+	{
+		private OutputStream os;
+		private InputStream is;
+		private DataOutputStream dos;
+		private DataInputStream dis;
+		
+		private Socket user_socket;
+		private String Nickname="";
+		
+		UserInfo(Socket soc)
+		{
+			this.user_socket=soc;
+			UserNetwork();
+		}
+		
+		private void UserNetwork()
+		{
+			try
+			{
+				is=user_socket.getInputStream();
+				dis=new DataInputStream(is);
+			
+				os=user_socket.getOutputStream();
+				dos=new DataOutputStream(os);
+
+				Nickname=dis.readUTF();
+				textArea.append(Nickname+" : user login\n");
+			}
+			catch(IOException e)
+			{
+				
+			}
+			
+		}
+		
+		public void run() //do in thread
+		{
+			while(true)
+			{
+				try {
+					String msg=dis.readUTF();
+					textArea.append("message from "+Nickname+" : "+msg+"\n");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				
+			}
 		}
 	}
 
