@@ -2,6 +2,9 @@ package old;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.net.Socket;
+import java.net.UnknownHostException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -27,19 +30,23 @@ public class Client extends JFrame implements ActionListener{
 	// Main GUI
 	private JPanel contentPane;
 	private JTextField message_tf;
-	private JButton notesend_btn = new JButton("쪽지보내기");
-	private JButton joinroom_btn = new JButton("방 들어가기");
-	private JButton createroom_btn = new JButton("방 만들기");
-	private JButton send_btn = new JButton("보내기");
-	private JList User_list = new JList(); //전체 접속자 list
-	private JList Room_list = new JList(); //전체 방 list
-	private JTextArea Chat_area = new JTextArea(); //채팅창 변수
+	private JButton notesend_btn = new JButton("send message");
+	private JButton joinroom_btn = new JButton("join room");
+	private JButton createroom_btn = new JButton("create room");
+	private JButton send_btn = new JButton("send");
+	private JList User_list = new JList();
+	private JList Room_list = new JList();
+	private JTextArea Chat_area = new JTextArea();
 
+	// login data
+	private Socket socket;
+	private String ip;
+	private int port;
 	
 	Client()
 	{
-		Login_init(); // login창 화면 구성
-		Main_init(); // main창 화면 구성
+		Login_init(); // login screen
+		Main_init(); // main screen
 		start();
 	}
 	
@@ -52,7 +59,7 @@ public class Client extends JFrame implements ActionListener{
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
 		
-		JLabel lblNewLabel = new JLabel("전 체 접 속 자");
+		JLabel lblNewLabel = new JLabel("join room");
 		lblNewLabel.setBounds(12, 10, 80, 15);
 		contentPane.add(lblNewLabel);
 		
@@ -64,7 +71,7 @@ public class Client extends JFrame implements ActionListener{
 		Room_list.setBounds(12, 35, 125, 160);
 		contentPane.add(Room_list);
 		
-		JLabel lblNewLabel_1 = new JLabel("채 팅 방 목 록");
+		JLabel lblNewLabel_1 = new JLabel("create room");
 		lblNewLabel_1.setBounds(12, 244, 80, 15);
 		contentPane.add(lblNewLabel_1);
 		
@@ -112,11 +119,11 @@ public class Client extends JFrame implements ActionListener{
 	
 	private void start()
 	{
-		login_btn.addActionListener(this); //로그인
-		notesend_btn.addActionListener(this); //쪽지보내기
-		joinroom_btn.addActionListener(this); //방들어가기
-		createroom_btn.addActionListener(this); //방만들기
-		send_btn.addActionListener(this); //전송버튼
+		login_btn.addActionListener(this); //
+		notesend_btn.addActionListener(this); //
+		joinroom_btn.addActionListener(this); //
+		createroom_btn.addActionListener(this); //
+		send_btn.addActionListener(this); //
 	}
 	
 	private void Login_init()
@@ -162,19 +169,31 @@ public class Client extends JFrame implements ActionListener{
 		Login_GUI.setVisible(true);
 	}
 	
+	private void Network()
+	{
+		try {
+			socket=new Socket(ip, port);
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 
 		new Client();
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
 		
 		if(e.getSource()==login_btn)
 		{
 			System.out.println("logint button click");
+			ip=ip_tf.getText().trim();
+			port=Integer.parseInt(port_tf.getText().trim());
+			Network();
 		}
 		else if(e.getSource()==notesend_btn)
 		{
