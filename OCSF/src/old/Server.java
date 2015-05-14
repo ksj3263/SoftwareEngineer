@@ -2,7 +2,11 @@ package old;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.*;
 
 import javax.swing.JButton;
@@ -26,6 +30,10 @@ public class Server extends JFrame implements ActionListener{
 	private ServerSocket server_socket;
 	private Socket socket;
 	private int port;
+	private InputStream is;
+	private OutputStream os;
+	private DataInputStream dis;
+	private DataOutputStream dos;
 	
 	Server()
 	{
@@ -101,6 +109,24 @@ public class Server extends JFrame implements ActionListener{
 					textArea.append("waiting user connection\n");
 					socket=server_socket.accept();
 					textArea.append("connection success!!!!\n");
+					
+					try
+					{
+						is=socket.getInputStream();
+						dis=new DataInputStream(is);
+					
+						os=socket.getOutputStream();
+						dos=new DataOutputStream(os);
+					}
+					catch(IOException e)
+					{
+						
+					}
+					
+					String msg="";
+					msg=dis.readUTF(); //message from user
+					textArea.append(msg);
+					dos.writeUTF("connection check");
 				} catch (IOException e) {
 					e.printStackTrace();
 				}

@@ -2,7 +2,11 @@ package old;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -42,6 +46,10 @@ public class Client extends JFrame implements ActionListener{
 	private Socket socket;
 	private String ip;
 	private int port;
+	private InputStream is;
+	private OutputStream os;
+	private DataInputStream dis;
+	private DataOutputStream dos;
 	
 	Client()
 	{
@@ -173,8 +181,46 @@ public class Client extends JFrame implements ActionListener{
 	{
 		try {
 			socket=new Socket(ip, port);
+			if(socket!=null)
+			{
+				Connection();
+			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void Connection()
+	{
+		try	{
+			is=socket.getInputStream();
+			dis=new DataInputStream(is);
+			
+			os=socket.getOutputStream();
+			dos=new DataOutputStream(os);
+		}
+		catch(IOException e)
+		{
+			
+		}
+		
+		Send_message("login user");
+		
+		String msg="";
+		try {
+			msg=dis.readUTF();
+			System.out.println("message from server : " + msg);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void Send_message(String str) // send message to server
+	{
+		try {
+			dos.writeUTF(str);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
