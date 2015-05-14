@@ -169,6 +169,15 @@ public class Server extends JFrame implements ActionListener{
 
 				Nickname=dis.readUTF();
 				textArea.append(Nickname+" : user login\n");
+				
+				for(int i=0 ; i<user_vc.size(); i++) //send message to user that new user login
+				{
+					UserInfo u=(UserInfo)user_vc.elementAt(i);
+					u.send_Message("NewUser/"+Nickname);
+				}
+				
+				//view user list
+				user_vc.add(this); // then add to vector
 			}
 			catch(IOException e)
 			{
@@ -190,6 +199,16 @@ public class Server extends JFrame implements ActionListener{
 				
 			}
 		}
+		
+		private void send_Message(String str)
+		{
+			try {
+				dos.writeUTF(str);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
 	}
 
 }

@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.StringTokenizer;
+import java.util.Vector;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -52,6 +54,10 @@ public class Client extends JFrame implements ActionListener{
 	private DataInputStream dis;
 	private DataOutputStream dos;
 	
+	Vector user_list=new Vector();
+	Vector room_list=new Vector();
+	StringTokenizer st;
+	
 	Client()
 	{
 		Login_init(); // login screen
@@ -77,7 +83,7 @@ public class Client extends JFrame implements ActionListener{
 		contentPane.add(notesend_btn);
 		
 		
-		Room_list.setBounds(12, 35, 125, 160);
+		Room_list.setBounds(12, 269, 125, 160);
 		contentPane.add(Room_list);
 		
 		JLabel lblNewLabel_1 = new JLabel("create room");
@@ -85,7 +91,7 @@ public class Client extends JFrame implements ActionListener{
 		contentPane.add(lblNewLabel_1);
 		
 		
-		User_list.setBounds(12, 269, 125, 160);
+		User_list.setBounds(12, 35, 125, 160);
 		contentPane.add(User_list);
 		
 		joinroom_btn.addActionListener(new ActionListener() {
@@ -209,6 +215,10 @@ public class Client extends JFrame implements ActionListener{
 		
 		Send_message(id);
 		
+		//add user list at lobby
+		user_list.add(id);
+		User_list.setListData(user_list);
+		
 		Thread th=new Thread(new Runnable()	{
 			
 			@Override
@@ -218,6 +228,7 @@ public class Client extends JFrame implements ActionListener{
 					try {
 						String msg=dis.readUTF();
 						System.out.println("message from server : "+msg);
+						inmessage(msg);
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -226,6 +237,25 @@ public class Client extends JFrame implements ActionListener{
 			}
 			
 		});
+		
+		th.start();
+	}
+	
+	private void inmessage(String str) // message from server
+	{
+		st=new StringTokenizer(str, "/");
+		
+		String protocal=st.nextToken();
+		String Message=st.nextToken();
+
+		System.out.println("protocal : "+protocal);
+		System.out.println("message : "+Message);
+		
+		if(protocal.equals("NewUser"))
+		{
+			user_list.add(Message);
+			User_list.setListData(user_list);
+		}
 	}
 	
 	private void Send_message(String str) // send message to server
