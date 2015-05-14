@@ -14,6 +14,7 @@ import java.util.Vector;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -61,6 +62,7 @@ public class Server extends JFrame implements ActionListener {
 		contentPane.add(scrollPane);
 
 		scrollPane.setViewportView(textArea);
+		textArea.setEditable(false);
 
 		JLabel label = new JLabel("port");
 		label.setBounds(12, 220, 57, 15);
@@ -77,6 +79,8 @@ public class Server extends JFrame implements ActionListener {
 		stop_btn.setBounds(152, 251, 120, 23);
 		contentPane.add(stop_btn);
 
+		stop_btn.setEnabled(false);
+		
 		this.setVisible(true);
 	}
 
@@ -84,7 +88,8 @@ public class Server extends JFrame implements ActionListener {
 		try {
 			server_socket = new ServerSocket(port);
 		} catch (IOException e) {
-			e.printStackTrace();
+			JOptionPane.showMessageDialog(null, "already open port", "info",
+					JOptionPane.ERROR_MESSAGE);
 		}
 
 		if (server_socket != null) {
@@ -106,7 +111,7 @@ public class Server extends JFrame implements ActionListener {
 						user.start();
 
 					} catch (IOException e) {
-						e.printStackTrace();
+						break;
 					}
 				}
 			}
@@ -127,7 +132,23 @@ public class Server extends JFrame implements ActionListener {
 			System.out.println("start btn click");
 			port = Integer.parseInt(port_tf.getText().trim());
 			Server_start();
+			
+			start_btn.setEnabled(false);
+			port_tf.setEditable(false);
+			stop_btn.setEnabled(true);
 		} else if (e.getSource() == stop_btn) {
+			stop_btn.setEnabled(false);
+			start_btn.setEnabled(true);
+			port_tf.setEditable(true);
+			
+			try {
+				server_socket.close();
+				user_vc.removeAllElements();
+				room_vc.removeAllElements();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			System.out.println("stop btn click");
 		}
 	}
@@ -159,18 +180,30 @@ public class Server extends JFrame implements ActionListener {
 				Nickname = dis.readUTF();
 				textArea.append(Nickname + " : user login\n");
 
-				BroadCast("NewUser/" + Nickname); // ±âÁ¸ »ç¿ëÀÚ¿¡°Ô ÀÚ½ÅÀ» ¾Ë¸°´Ù.
+				BroadCast("NewUser/" + Nickname); // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½Ú½ï¿½ï¿½ï¿½ ï¿½Ë¸ï¿½ï¿½ï¿½.
 
 				for (int i = 0; i < user_vc.size(); i++) {
 					UserInfo u = (UserInfo) user_vc.elementAt(i);
 
 					Send_message("OldUser/" + u.Nickname);
 				}
-
-				user_vc.add(this); // »ç¿ëÀÚ¿¡°Ô ¾Ë¸° ÈÄ Vector¿¡ ÀÚ½ÅÀ» Ãß°¡
-				System.out.println("ÇöÀç Á¢¼ÓµÈ »ç¿ëÀÚ ¼ö : " + user_vc.size());
+				
+				// send me original room list 
+				for(int i=0; i<room_vc.size(); i++){
+					RoomInfo r = (RoomInfo)room_vc.elementAt(i);
+					
+					Send_message("OldRoom/"+r.Room_name);
+				}
+				
+				Send_message("room_list_update/");
+				
+				user_vc.add(this); // ï¿½ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½Ë¸ï¿½ ï¿½ï¿½ Vectorï¿½ï¿½ ï¿½Ú½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½
+				
+				BroadCast("user_list_update/");
 			} catch (IOException e) {
 
+				JOptionPane.showMessageDialog(null, "stream setting error", "info",
+						JOptionPane.ERROR_MESSAGE);
 			}
 
 		}
@@ -184,24 +217,34 @@ public class Server extends JFrame implements ActionListener {
 							+ "\n");
 					InMessage(msg);
 				} catch (IOException e) {
-					e.printStackTrace();
+					textArea.append(Nickname+": user connection disconnect\n");
+					try{
+					dos.close();
+					dis.close();
+					user_socket.close();
+					user_vc.remove(this);
+					BroadCast("User_out/"+Nickname);
+					BroadCast("user_list_update/");
+					}
+					catch(IOException e1){};
+					break;
 				}
 
 			}
-		} // run()³¡
+		} // run()ï¿½ï¿½
 
-		private void InMessage(String str) { // ¸Þ¼¼ÁöÃ³¸®
+		private void InMessage(String str) { // ï¿½Þ¼ï¿½ï¿½ï¿½Ã³ï¿½ï¿½
 			st = new StringTokenizer(str, "/");
 
 			String protocol = st.nextToken();
-			String message = st.nextToken(); // ¸Þ½ÃÁö¸¦ ÇÁ·ÎÅäÄÝ°ú ±×¿Ü·Î ³ª´®
+			String message = st.nextToken(); // ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý°ï¿½ ï¿½×¿Ü·ï¿½ ï¿½ï¿½ï¿½ï¿½
 
-			System.out.println("ÇÁ·ÎÅäÄÝ :" + protocol);
-			System.out.println("¸Þ¼¼Áö :" + message);
+			System.out.println("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ :" + protocol);
+			System.out.println("ï¿½Þ¼ï¿½ï¿½ï¿½ :" + message);
 
 			if (protocol.equals("Note")) {
-				st = new StringTokenizer(message, "@"); // ±×¿Ü¿¡¼­ º¸³»´Â¾ÆÀÌµð¿Í ¸Þ¸ð³»¿ëÀ¸·Î
-														// ´Ù½Ã ³ª´®
+				st = new StringTokenizer(message, "@"); // ï¿½×¿Ü¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Â¾ï¿½ï¿½Ìµï¿½ï¿½ ï¿½Þ¸ð³»¿ï¿½ï¿½ï¿½ï¿½ï¿½
+														// ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 				String user = st.nextToken();
 				String note = st.nextToken();
@@ -216,7 +259,7 @@ public class Server extends JFrame implements ActionListener {
 				for (int i = 0; i < room_vc.size(); i++) {
 					RoomInfo r = (RoomInfo) room_vc.elementAt(i);
 
-					if (r.Room_name.equals(message)) // °°Àº ÀÌ¸§ÀÇ ¹æÀÌ Á¸Àç
+					if (r.Room_name.equals(message)) // ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 					{
 						Send_message("CreateRoomFail/ok");
 						RoomCh = false;
@@ -233,7 +276,7 @@ public class Server extends JFrame implements ActionListener {
 				}
 				RoomCh = true;
 			} else if (protocol.equals("Chatting")) {
-				String msg = st.nextToken(); // Ã¤ÆÃ³»¿ë
+				String msg = st.nextToken(); // Ã¤ï¿½Ã³ï¿½ï¿½ï¿½
 
 				for (int i = 0; i < room_vc.size(); i++) {
 					RoomInfo r = (RoomInfo) room_vc.elementAt(i);
@@ -242,10 +285,22 @@ public class Server extends JFrame implements ActionListener {
 						r.BroadCast_Room("Chatting/" + Nickname + "/" + msg);
 					}
 				}
+			} else if(protocol.equals("JoinRoom")){
+				for(int i=0; i<room_vc.size(); i++){
+					RoomInfo r = (RoomInfo) room_vc.elementAt(i);
+					if(r.Room_name.equals(message)){
+						// new user alarm
+						r.BroadCast_Room("Chatting/info/****"+Nickname+"enter****");
+						
+						// user add
+						r.Add_User(this);
+						Send_message("JoinRoom/"+message);
+					}
+				}
 			}
 		}
 
-		private void BroadCast(String str) { // ÀüÃ¼»ç¿ëÀÚ¿¡°Ô ¸Þ¼¼Áöº¸³¿
+		private void BroadCast(String str) { // ï¿½ï¿½Ã¼ï¿½ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½Þ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			for (int i = 0; i < user_vc.size(); i++) {
 				UserInfo u = (UserInfo) user_vc.elementAt(i);
 
@@ -279,6 +334,10 @@ public class Server extends JFrame implements ActionListener {
 
 				u.Send_message(str);
 			}
+		}
+		
+		private void Add_User(UserInfo u){
+			this.Room_user_vc.add(u);
 		}
 	}
 
