@@ -2,6 +2,8 @@ package old;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.net.*;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -21,12 +23,15 @@ public class Server extends JFrame implements ActionListener{
 	private JButton start_btn = new JButton("start");
 	private JButton stop_btn = new JButton("stop");
 	
+	private ServerSocket server_socket;
+	private Socket socket;
+	private int port;
 	
 	Server()
 	{
 		
-		init(); // 화면 생성
-		start(); // ActionListener 설정
+		init(); // 
+		start(); // ActionListener
 	}
 	
 	private void start()
@@ -35,7 +40,7 @@ public class Server extends JFrame implements ActionListener{
 		stop_btn.addActionListener(this);
 	}
 	
-	public void init()
+	public void init() // login gui
 	{
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 300, 350);
@@ -72,8 +77,40 @@ public class Server extends JFrame implements ActionListener{
 	}
 	
 	
+	private void Server_start()
+	{
+		try {
+			server_socket=new ServerSocket(port);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		if(server_socket!=null)
+		{
+			Connection();
+		}
+	}
+	
+	private void Connection()
+	{
+		Thread th=new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				try {
+					textArea.append("waiting user connection\n");
+					socket=server_socket.accept();
+					textArea.append("connection success!!!!\n");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		
+		th.start();
+	}
+	
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 
 		new Server();
 	}
@@ -81,10 +118,11 @@ public class Server extends JFrame implements ActionListener{
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
 		
 		if(e.getSource()==start_btn){
 			System.out.println("start btn click");
+			port = Integer.parseInt(port_tf.getText().trim());
+			Server_start();
 		}
 		else if(e.getSource()==stop_btn){
 			System.out.println("stop btn click");
