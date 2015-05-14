@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
+import java.util.StringTokenizer;
 import java.util.Vector;
 
 import javax.swing.JButton;
@@ -18,6 +19,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane.SystemMenuBar;
 
 public class Server extends JFrame implements ActionListener {
 
@@ -31,9 +33,11 @@ public class Server extends JFrame implements ActionListener {
 	private Socket socket;
 	private int port;
 	private Vector user_vc = new Vector();
+	private Vector room_vc = new Vector();
+
+	private StringTokenizer st;
 
 	Server() {
-
 		init(); //
 		start(); // ActionListener
 	}
@@ -90,7 +94,6 @@ public class Server extends JFrame implements ActionListener {
 
 	private void Connection() {
 		Thread th = new Thread(new Runnable() {
-
 			@Override
 			public void run() {
 				while (true) {
@@ -138,6 +141,8 @@ public class Server extends JFrame implements ActionListener {
 		private Socket user_socket;
 		private String Nickname = "";
 
+		private boolean RoomCh = true;
+
 		UserInfo(Socket soc) {
 			this.user_socket = soc;
 			UserNetwork();
@@ -154,16 +159,16 @@ public class Server extends JFrame implements ActionListener {
 				Nickname = dis.readUTF();
 				textArea.append(Nickname + " : user login\n");
 
-				for (int i = 0; i < user_vc.size(); i++) // send message to user
-															// that new user
-															// login
-				{
+				BroadCast("NewUser/" + Nickname); // 기존 사용자에게 자신을 알린다.
+
+				for (int i = 0; i < user_vc.size(); i++) {
 					UserInfo u = (UserInfo) user_vc.elementAt(i);
-					u.send_Message("NewUser/" + Nickname);
+
+					Send_message("OldUser/" + u.Nickname);
 				}
 
-				// view user list
-				user_vc.add(this); // then add to vector
+				user_vc.add(this); // 사용자에게 알린 후 Vector에 자신을 추가
+				System.out.println("현재 접속된 사용자 수 : " + user_vc.size());
 			} catch (IOException e) {
 
 			}
@@ -177,21 +182,104 @@ public class Server extends JFrame implements ActionListener {
 					String msg = dis.readUTF();
 					textArea.append("message from " + Nickname + " : " + msg
 							+ "\n");
+					InMessage(msg);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 
 			}
+		} // run()끝
+
+		private void InMessage(String str) { // 메세지처리
+			st = new StringTokenizer(str, "/");
+
+			String protocol = st.nextToken();
+			String message = st.nextToken(); // 메시지를 프로토콜과 그외로 나눔
+
+			System.out.println("프로토콜 :" + protocol);
+			System.out.println("메세지 :" + message);
+
+			if (protocol.equals("Note")) {
+				st = new StringTokenizer(message, "@"); // 그외에서 보내는아이디와 메모내용으로
+														// 다시 나눔
+
+				String user = st.nextToken();
+				String note = st.nextToken();
+				for (int i = 0; i < user_vc.size(); i++) {
+					UserInfo u = (UserInfo) user_vc.elementAt(i);
+					if (u.Nickname.equals(user)) {
+						u.Send_message("Note/" + Nickname + "@" + note);
+					}
+				}
+				System.out.println(note);
+			} else if (protocol.equals("CreateRoom")) {
+				for (int i = 0; i < room_vc.size(); i++) {
+					RoomInfo r = (RoomInfo) room_vc.elementAt(i);
+
+					if (r.Room_name.equals(message)) // 같은 이름의 방이 존재
+					{
+						Send_message("CreateRoomFail/ok");
+						RoomCh = false;
+						break;
+					}
+
+				}
+				if (RoomCh) {
+					RoomInfo new_room = new RoomInfo(message, this);
+					room_vc.add(new_room);
+					Send_message("CreateRoom/" + message);
+
+					BroadCast("New_Room/" + message);
+				}
+				RoomCh = true;
+			} else if (protocol.equals("Chatting")) {
+				String msg = st.nextToken(); // 채팅내용
+
+				for (int i = 0; i < room_vc.size(); i++) {
+					RoomInfo r = (RoomInfo) room_vc.elementAt(i);
+
+					if (r.Room_name.equals(message)) {
+						r.BroadCast_Room("Chatting/" + Nickname + "/" + msg);
+					}
+				}
+			}
 		}
 
-		private void send_Message(String str) {
+		private void BroadCast(String str) { // 전체사용자에게 메세지보냄
+			for (int i = 0; i < user_vc.size(); i++) {
+				UserInfo u = (UserInfo) user_vc.elementAt(i);
+
+				u.Send_message(str);
+			}
+
+		}
+
+		private void Send_message(String str) // send message
+		{
 			try {
 				dos.writeUTF(str);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+	}
 
+	class RoomInfo {
+		private String Room_name;
+		private Vector Room_user_vc = new Vector();
+
+		RoomInfo(String str, UserInfo u) {
+			this.Room_name = str;
+			this.Room_user_vc.add(u);
+		}
+
+		public void BroadCast_Room(String str) {
+			for (int i = 0; i < Room_user_vc.size(); i++) {
+				UserInfo u = (UserInfo) Room_user_vc.elementAt(i);
+
+				u.Send_message(str);
+			}
+		}
 	}
 
 }
