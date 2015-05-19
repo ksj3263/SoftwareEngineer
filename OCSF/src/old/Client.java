@@ -56,7 +56,7 @@ public class Client extends JFrame implements ActionListener, KeyListener {
 	private DataInputStream dis;
 	private DataOutputStream dos;
 
-	// ������� ���� ���� ����
+	// 벡터
 	Vector user_list = new Vector();
 	Vector room_list = new Vector();
 	StringTokenizer st;
@@ -134,15 +134,15 @@ public class Client extends JFrame implements ActionListener, KeyListener {
 		this.setVisible(false);
 	}
 
-	private void inmessage(String str) // �����κ��� ������ ��� �޼���
+	private void inmessage(String str)
 	{
 		st = new StringTokenizer(str, "/");
 
 		String protocol = st.nextToken();
 		String Message = st.nextToken();
 
-		System.out.println("�������� :" + protocol);
-		System.out.println("����:" + Message);
+		System.out.println("Protocol :" + protocol);
+		System.out.println("Message:" + Message);
 
 		if (protocol.equals("NewUser")) {
 			user_list.add(Message);
@@ -158,9 +158,9 @@ public class Client extends JFrame implements ActionListener, KeyListener {
 			String user = st.nextToken();
 			String note = st.nextToken();
 
-			System.out.println(user + "����ں��� ���� �޼��� " + note);
+			System.out.println(user + ":" + note);
 
-			JOptionPane.showMessageDialog(null, note, user + "������ ���� ����",
+			JOptionPane.showMessageDialog(null, note, user + " Note",
 					JOptionPane.CLOSED_OPTION);
 		} else if (protocol.equals("CreateRoom")) {
 			My_Room = Message;
@@ -169,7 +169,7 @@ public class Client extends JFrame implements ActionListener, KeyListener {
 			joinroom_btn.setEnabled(false);
 			createroom_btn.setEnabled(false);
 		} else if (protocol.equals("CreateRoomFail")) {
-			JOptionPane.showMessageDialog(null, "�� ����� ����", "�˸�",
+			JOptionPane.showMessageDialog(null, "CreateRoomFail", "Fail",
 					JOptionPane.ERROR_MESSAGE);
 		} else if (protocol.equals("New_Room")) {
 			room_list.add(Message);
@@ -280,7 +280,7 @@ public class Client extends JFrame implements ActionListener, KeyListener {
 		
 		Send_message(id);
 
-		// User_list�� ����� �߰�
+		// User_list占쏙옙 占쏙옙占쏙옙占� 占쌩곤옙
 		user_list.add(id);
 		User_list.setListData(user_list);
 
@@ -352,23 +352,23 @@ public class Client extends JFrame implements ActionListener, KeyListener {
 			}
 			
 			
-		} else if (e.getSource() == notesend_btn) { // ����������
+		} else if (e.getSource() == notesend_btn) { 
 			System.out.println("note send button click");
-			String user = (String) User_list.getSelectedValue(); // ���� �̸�ȹ��
+			String user = (String) User_list.getSelectedValue(); 
 
-			String note = JOptionPane.showInputDialog("�����޽���"); // �˾�â����
+			String note = JOptionPane.showInputDialog("占쏙옙占쏙옙占쌨쏙옙占쏙옙"); 
 
 			if (note != null) {
 				Send_message("Note/" + user + "@" + note);
 			}
-			System.out.println("�޴»��:" + user + " ���� ����:" + note);
+			System.out.println("占쌨는삼옙占�:" + user + " 占쏙옙占쏙옙 占쏙옙占쏙옙:" + note);
 		} else if (e.getSource() == joinroom_btn) {
 			String JoinRoom = (String)Room_list.getSelectedValue();
 			Send_message("JoinRoom/"+JoinRoom);
 			
 			System.out.println("join room button click");
 		} else if (e.getSource() == createroom_btn) {
-			String roomname = JOptionPane.showInputDialog("�� �̸�");
+			String roomname = JOptionPane.showInputDialog("占쏙옙 占싱몌옙");
 			if (roomname != null) {
 				Send_message("CreateRoom/" + roomname);
 			}
@@ -379,7 +379,6 @@ public class Client extends JFrame implements ActionListener, KeyListener {
 			message_tf.setText("");
 			message_tf.requestFocus();
 			
-			// �������� + ���̸� + �޽���
 			System.out.println("send button click");
 		}
 	}
@@ -408,4 +407,5 @@ public class Client extends JFrame implements ActionListener, KeyListener {
 		
 	}
 
+}
 }

@@ -180,7 +180,7 @@ public class Server extends JFrame implements ActionListener {
 				Nickname = dis.readUTF();
 				textArea.append(Nickname + " : user login\n");
 
-				BroadCast("NewUser/" + Nickname); // ���� ����ڿ��� �ڽ��� �˸���.
+				BroadCast("NewUser/" + Nickname); 
 
 				for (int i = 0; i < user_vc.size(); i++) {
 					UserInfo u = (UserInfo) user_vc.elementAt(i);
@@ -197,7 +197,7 @@ public class Server extends JFrame implements ActionListener {
 				
 				Send_message("room_list_update/");
 				
-				user_vc.add(this); // ����ڿ��� �˸� �� Vector�� �ڽ��� �߰�
+				user_vc.add(this); 
 				
 				BroadCast("user_list_update/");
 			} catch (IOException e) {
@@ -231,20 +231,20 @@ public class Server extends JFrame implements ActionListener {
 				}
 
 			}
-		} // run()��
+		} // run() END
 
-		private void InMessage(String str) { // �޼���ó��
+		private void InMessage(String str) {
 			st = new StringTokenizer(str, "/");
 
 			String protocol = st.nextToken();
-			String message = st.nextToken(); // �޽����� �������ݰ� �׿ܷ� ����
+			String message = st.nextToken(); 
 
-			System.out.println("�������� :" + protocol);
-			System.out.println("�޼��� :" + message);
+			System.out.println("Protocol :" + protocol);
+			System.out.println("Message :" + message);
 
 			if (protocol.equals("Note")) {
-				st = new StringTokenizer(message, "@"); // �׿ܿ��� �����¾��̵�� �޸𳻿�����
-														// �ٽ� ����
+				st = new StringTokenizer(message, "@"); 
+														
 
 				String user = st.nextToken();
 				String note = st.nextToken();
@@ -259,7 +259,7 @@ public class Server extends JFrame implements ActionListener {
 				for (int i = 0; i < room_vc.size(); i++) {
 					RoomInfo r = (RoomInfo) room_vc.elementAt(i);
 
-					if (r.Room_name.equals(message)) // ���� �̸��� ���� ����
+					if (r.Room_name.equals(message)) 
 					{
 						Send_message("CreateRoomFail/ok");
 						RoomCh = false;
@@ -276,7 +276,7 @@ public class Server extends JFrame implements ActionListener {
 				}
 				RoomCh = true;
 			} else if (protocol.equals("Chatting")) {
-				String msg = st.nextToken(); // ä�ó���
+				String msg = st.nextToken(); 
 
 				for (int i = 0; i < room_vc.size(); i++) {
 					RoomInfo r = (RoomInfo) room_vc.elementAt(i);
@@ -300,7 +300,7 @@ public class Server extends JFrame implements ActionListener {
 			}
 		}
 
-		private void BroadCast(String str) { // ��ü����ڿ��� �޼�������
+		private void BroadCast(String str) {
 			for (int i = 0; i < user_vc.size(); i++) {
 				UserInfo u = (UserInfo) user_vc.elementAt(i);
 
