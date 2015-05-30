@@ -1,0 +1,52 @@
+ScrollPane{
+	-fx-hbar-policy: never;
+}
+Button{
+	-fx-font-family: "DX만화2B";
+	-fx-text-fill: #545454;
+}
+
+#root{
+	-fx-background-image: url("style/sky.png");
+	-fx-background-position: center;
+}
+
+#msgInput{
+	-fx-font-size: 16;
+	-fx-font-family: "08서울한강체 M";
+	-fx-text-fill: #545454;
+}
+#btnSndMsg{
+	-fx-font-size: 14;
+}
+
+#btnSndImtc{
+	-fx-font-size: 14;
+}
+
+#info_lbl{
+	-fx-font-size: 24;
+	-fx-font-family: "DX만화2B";
+	-fx-text-fill: white;
+	-fx-alignment: center-right;
+}
+
+#usrlst_lbl{
+	-fx-font-size: 28;
+	-fx-font-family: "DX만화2B";
+	-fx-text-fill: white;
+	-fx-alignment: center;
+}
+#usrlst_view{
+	-fx-font-size: 16;
+	-fx-font-family: "08서울한강체 M";
+	-fx-text-fill: #545454;
+}
+
+#btnSndFile{
+	-fx-font-size: 28;
+}
+
+#btnExitRm{
+	-fx-font-size: 28;
+}

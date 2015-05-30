@@ -1,0 +1,22 @@
+Button{
+	-fx-font-family: "DX만화2B";
+	-fx-text-fill: #545454;
+	-fx-font-size: 20;
+}
+
+#root{
+	-fx-background-image: url("style/sky.png");
+	-fx-background-position: center;
+}
+
+#rmlst_lbl{
+	-fx-font-size: 32;
+	-fx-font-family: "DX만화2B";
+	-fx-text-fill: white;
+}
+#usrlst_lbl{
+	-fx-font-size: 32;
+	-fx-font-family: "DX만화2B";
+	-fx-text-fill: white;
+}
+

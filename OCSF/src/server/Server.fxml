@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.VBox?>
+
+
+<VBox fx:id="root" prefHeight="400.0" prefWidth="600.0" spacing="10.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8" fx:controller="server.Server">
+   <children>
+      <HBox prefHeight="50.0" prefWidth="600.0">
+         <children>
+            <Label fx:id="usrInfo_lbl" prefHeight="50.0" prefWidth="285.0" text="User Info">
+               <HBox.margin>
+                  <Insets left="10.0" right="5.0" />
+               </HBox.margin>
+            </Label>
+            <Label fx:id="rmInfo_lbl" prefHeight="50.0" prefWidth="285.0" text="Room Info">
+               <HBox.margin>
+                  <Insets left="5.0" right="10.0" />
+               </HBox.margin>
+            </Label>
+         </children>
+      </HBox>
+      <HBox prefHeight="300.0" prefWidth="285.0">
+         <children>
+            <TextArea fx:id="usrDisplay" editable="false" prefHeight="300.0" prefWidth="285.0">
+               <HBox.margin>
+                  <Insets left="10.0" right="5.0" />
+               </HBox.margin>
+            </TextArea>
+            <TextArea fx:id="rmDisplay" editable="false" prefHeight="300.0" prefWidth="285.0">
+               <HBox.margin>
+                  <Insets left="5.0" right="10.0" />
+               </HBox.margin>
+            </TextArea>
+         </children>
+      </HBox>
+      <HBox prefHeight="50.0" prefWidth="600.0">
+         <children>
+            <Label prefHeight="30.0" prefWidth="100.0" text="port">
+               <HBox.margin>
+                  <Insets bottom="5.0" left="10.0" right="5.0" top="5.0" />
+               </HBox.margin>
+            </Label>
+            <TextField fx:id="portInput" prefHeight="30.0" prefWidth="200.0" promptText="1111 ~ 9999">
+               <HBox.margin>
+                  <Insets bottom="5.0" left="5.0" right="10.0" top="5.0" />
+               </HBox.margin>
+            </TextField>
+            <Button fx:id="btnStartStop" mnemonicParsing="false" prefHeight="30.0" prefWidth="250.0" text="start">
+               <HBox.margin>
+                  <Insets bottom="5.0" left="10.0" right="10.0" top="5.0" />
+               </HBox.margin>
+            </Button>
+         </children>
+      </HBox>
+   </children>
+</VBox>
