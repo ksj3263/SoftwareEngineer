@@ -5,11 +5,13 @@ import java.util.Vector;
 public class UserList {
 
 	private Vector<User> usrlst;
-	
+	private Vector<String> idlst;
+
 	/* Singleton Pattern */
 	private static volatile UserList userList;
 	private UserList(){
 		usrlst = new Vector<User>();
+		idlst = new Vector<String>();
 	}
 	public static UserList getInstance(){
 		if(userList == null){
@@ -23,7 +25,10 @@ public class UserList {
 	
 	/* Operation */
 	public void addUser(User u){
-		if(usrlst.add(u))System.out.println("add "+u.getID());
+		if(usrlst.add(u)) {
+			idlst.add(u.getID());
+			System.out.println("add "+u.getID());
+		}
 		else System.out.println("not add "+u.getID());
 	}
 	
@@ -40,10 +45,14 @@ public class UserList {
 		return true;
 	}
 	
-	public void removeUser(User u){
-		int index = findUserByUserId(u.getID());
-		if(index==-1)System.out.println("not exist "+u.getID());
-		else usrlst.remove(index);
+	public void removeUserByUserId(String id){
+		int index = findUserByUserId(id);
+		if(index==-1)System.out.println("not remove " + id);
+		else {
+			usrlst.remove(index);
+			idlst.remove(index);
+			System.out.println("remove " + id);
+		}
 	}
 	
 	public User getUser(int index){
@@ -53,4 +62,11 @@ public class UserList {
 	public int getUserNum(){
 		return usrlst.size();
 	}
-}
+	
+	public Vector<String> getIdList(){
+		return idlst;
+	}
+	
+	
+} // class UserList END
+

@@ -1,10 +1,16 @@
 package utility;
 
+
 public class Room {
 
 	private String roomName;
 	private boolean isPrivacyRoom;
-	private RoomList rmlst = RoomList.getInstance();
+	int inUserNum;
+	
+	/* Constructor */
+	public Room(){
+		inUserNum = 1;
+	}
 	
 	/* Operation */
 	public boolean checkRoomName(String roomName){
@@ -12,16 +18,8 @@ public class Room {
 		return false;
 	}
 	
-	public void makeRoom(Room r){
-		rmlst.addRoom(r);
-	}
-	
-	public void enterRoom(Room r){
-		rmlst.removeRoom(r);
-	}
-	
-	public void exitRoom(Room r){
-		
+	public void enterRoom(){
+		inUserNum++;
 	}
 	
 	/* Getter and Setter */
@@ -37,4 +35,9 @@ public class Room {
 	public void setPrivacyRoom(boolean isPrivacyRoom) {
 		this.isPrivacyRoom = isPrivacyRoom;
 	}
+	public int getInUserNum() {
+		return inUserNum;
+	}
+	
+
 }

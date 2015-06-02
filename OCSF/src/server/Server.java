@@ -13,6 +13,11 @@ import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import client.RoomItem;
+import utility.Data;
+import utility.PrivateRoom;
+import utility.PublicRoom;
+import utility.Room;
 import utility.RoomList;
 import utility.User;
 import utility.UserList;
@@ -26,14 +31,14 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 
 public class Server extends Application implements Initializable{
 
 	ExecutorService executorService;
 	ServerSocket serverSocket;
-	ObjectInputStream input;
-	ObjectOutputStream output;
 	List<ToClient> connections = new Vector<ToClient>();
 	int port;
 	
@@ -41,10 +46,11 @@ public class Server extends Application implements Initializable{
 	UserList usrlst = UserList.getInstance();
 	
 	void startServer(){
-		executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		executorService = Executors.newFixedThreadPool(1000);
 		try {
 			serverSocket = new ServerSocket(port);
 		} catch (Exception e) {
+			e.printStackTrace();
 			if(serverSocket.isClosed()){
 				stopServer();
 			}
@@ -55,7 +61,7 @@ public class Server extends Application implements Initializable{
 			@Override
 			public void run() {
 				Platform.runLater(()->{
-					displayText("[Server Start (" + port + ")]");
+					displayText("[Server Start ( " + port + " )]");
 					btnStartStop.setText("stop");
 				});
 				while(true){
@@ -106,7 +112,9 @@ public class Server extends Application implements Initializable{
 	
 	class ToClient{
 		Socket socket;
-		
+		private String userID;
+		private String inRoomName;
+
 		ToClient(Socket socket){
 			this.socket = socket;
 			receive();
@@ -118,32 +126,10 @@ public class Server extends Application implements Initializable{
 				public void run() {
 					try {
 						while(true){
-							/*byte[] byteArr = new byte[100];
-							InputStream inputStream = socket.getInputStream();
-							
-							int readByteCount = inputStream.read(byteArr);
-							
-							if(readByteCount==-1){
-								throw new IOException();
-							}
-							
-							String message = "[Request: " + socket.getRemoteSocketAddress() + 
-									": " + Thread.currentThread().getName() + "]";
-							Platform.runLater(()->{
-								displayText(message);
-							});
-							
-							String data = new String(byteArr,0,readByteCount,"UTF-8");*/
-							input = new ObjectInputStream(socket.getInputStream());
-							String protocol = (String)input.readObject();
-							Object data = input.readObject();
-							inMessage(protocol, data);
-							
-							Thread.sleep(2000);
-							System.out.println("sleep");
-							/*for(ToClient client:connections){
-								client.send("Message", data);
-							}*/
+							ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
+							Data data = (Data)input.readObject();
+							System.out.println(data.toString());
+							inMessage(data.getProtocol(), data.getData());
 						}
 					} catch (Exception e) {
 						try{
@@ -167,13 +153,9 @@ public class Server extends Application implements Initializable{
 				@Override
 				public void run() {
 					try {
-						/*byte[] byteArr = data.getBytes("UTF-8");
-						OutputStream outputStream = socket.getOutputStream();
-						outputStream.write(byteArr);
-						outputStream.flush();*/
-						output = new ObjectOutputStream(socket.getOutputStream());
-						output.writeObject(protocol);
-						output.writeObject(data);
+						ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+						output.writeObject(new Data(protocol, data));
+						output.flush();
 					} catch (Exception e) {
 						try {
 							String message = "[Client Disconnect: " + 
@@ -197,14 +179,83 @@ public class Server extends Application implements Initializable{
 			
 			if(protocol.equals("LogIn")){
 				boolean lgn_result = usrlst.isOverlapId(data.toString());
-				if(lgn_result) send(protocol,"NO");
+				if(lgn_result) send("LogIn","NO");
 				else {
-					send(protocol,"YES");
-					usrlst.addUser(new User(data.toString()));
+					send("LogIn","YES");
+					userID = data.toString();
+					usrlst.addUser(new User(userID));
+					
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					
+					for(ToClient client:connections){
+						if(client!=this) client.send("NewUser", userID);
+						else{
+							send("OldUser", usrlst.getIdList());
+						}
+					}
 				}
 			}
-			else if(protocol.equals("MakeRoom")){
+			else if(protocol.equals("LogOut")){
+				usrlst.removeUserByUserId(data.toString());
 				
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+				for(ToClient client:connections){
+					if(client!=this) client.send("UserOut", data.toString());
+					else client.send("LogOut", "OK");
+				}
+			}
+			else if(protocol.equals("OldRoom") && data.toString().equals("OK")){
+				send("OldRoom", rmlst.getSendlst());
+			}
+			else if(protocol.equals("MakePublic")){
+				boolean rm_result = rmlst.isOverlapRoomName(data.toString());
+				if(rm_result) send("MakePublic","NO");
+				else {
+					send("MakePublic","YES");
+					inRoomName = data.toString();
+					rmlst.addRoom(new PublicRoom(inRoomName));
+					
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					
+					for(ToClient client:connections){
+						Pair<String, Integer> rm = new Pair(inRoomName,rmlst.getRoomByRoomName(inRoomName).getInUserNum());
+						client.send("public", rm);
+					}
+				}
+			}
+			else if(protocol.equals("MakePrivate")){
+				Pair<String, String> pri_rm = (Pair<String, String>) data;
+				boolean rm_result = rmlst.isOverlapRoomName(pri_rm.getKey());
+				if(rm_result) send("MakePrivate","NO");
+				else {
+					send("MakePrivate","YES");
+					inRoomName = pri_rm.getKey();
+					rmlst.addRoom(new PrivateRoom(inRoomName, pri_rm.getValue()));
+					
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					
+					for(ToClient client:connections){
+						Pair<String, Integer> rm = new Pair(inRoomName,rmlst.getRoomByRoomName(inRoomName).getInUserNum());
+						client.send("private", rm);
+					}
+				}
 			}
 			else if(protocol.equals("EnterRoom")){
 				
@@ -213,16 +264,34 @@ public class Server extends Application implements Initializable{
 				
 			}
 			else if(protocol.equals("Message")){
-				
+				for(ToClient client:connections){
+					if(client.getInRoomName().equals(inRoomName) /*&& client!=this*/){
+						Pair<String, String> msg = new Pair<String, String>(userID, data.toString());
+						client.send("Message", msg);
+					}
+				}
 			}
 			else if(protocol.equals("Imoticon")){
-				
+				for(ToClient client:connections){
+					if(client.getInRoomName().equals(inRoomName) /*&& client!=this*/){
+						Pair<String, String> msg = new Pair<String, String>(userID, data.toString());
+						client.send("Imoticon", msg);
+					}
+				}
 			}
 			else if(protocol.equals("File")){
 				
 			}
 		}
-	}
+		
+		// Getter //
+		public String getUserID() {
+			return userID;
+		}
+		public String getInRoomName() {
+			return inRoomName;
+		}
+	} // class ToClient END
 	
 	/* GUI */
 	@FXML TextArea usrDisplay;
@@ -271,4 +340,4 @@ public class Server extends Application implements Initializable{
 	public static void main(String[] args) {
 		launch(args);
 	}
-}
+} // class Server END

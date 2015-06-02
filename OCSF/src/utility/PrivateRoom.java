@@ -3,12 +3,17 @@ package utility;
 public class PrivateRoom extends Room{
 
 	private String roomPW;
+	
+	/*Constructor*/
+	public PrivateRoom(){}
+	
+	public PrivateRoom(String roomName, String roomPW){
+		setRoomName(roomName);
+		setRoomPW(roomPW);
+		setPrivacyRoom(true);
+	}
 
 	/* Operation */
-	public boolean isValidRoomPW(String roomPW){
-		if(roomPW==getRoomPW()) return true;
-		return false;
-	}
 	
 	public boolean checkSettingPW(String roomPW){
 		if(4<=roomPW.length() && roomPW.length()<=30){
@@ -30,5 +35,4 @@ public class PrivateRoom extends Room{
 	public void setRoomPW(String roomPW) {
 		this.roomPW = roomPW;
 	}
-	
 }

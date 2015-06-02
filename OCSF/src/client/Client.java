@@ -1,37 +1,35 @@
 package client;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.Vector;
 
-
-
-import javax.jws.Oneway;
-
-
-
+import utility.Data;
+import utility.PrivateRoom;
+import utility.PublicRoom;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
@@ -39,27 +37,27 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.util.Pair;
 
 public class Client extends Application implements Initializable{
 
 	Socket socket;
-	ObjectInputStream input;
-	ObjectOutputStream output;
-	
 	String userID;
 	String ip;
 	int port;
-	
-	Vector usrlst = new Vector();
-	Vector rmlst = new Vector();
 	
 	LoginGUI lgngui = new LoginGUI();
 	LobbyGUI lbbgui = new LobbyGUI();
@@ -96,8 +94,6 @@ public class Client extends Application implements Initializable{
 			if(socket!=null && !socket.isClosed()){
 				socket.close();
 			}
-			if(input!=null) input.close();
-			if(output!=null) output.close();
 		} catch (IOException e) {
 			System.out.println("stropClient() ERROR");
 		}
@@ -105,12 +101,10 @@ public class Client extends Application implements Initializable{
 	void receive(){
 		while(true){
 			try {
-				input = new ObjectInputStream(socket.getInputStream());
-				String protocol = (String)input.readObject();
-				Object data = input.readObject();
-				System.out.println("receive() protocol: " + protocol);
-				System.out.println("receive() data: " + data.toString());
-				inMessage(protocol, data);
+				ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
+				Data data = (Data)input.readObject();
+				System.out.println("receive()\n" + data.toString());
+				inMessage(data.getProtocol(), data.getData());
 			} catch (Exception e) {
 				//e.printStackTrace();
 				System.out.println("receive() ERROR");
@@ -124,13 +118,9 @@ public class Client extends Application implements Initializable{
 			@Override
 			public void run(){
 				try {
-					/*byte[] byteArr = data.getBytes("UTF-8");
-					OutputStream outputStream = socket.getOutputStream();
-					outputStream.write(byteArr);
-					outputStream.flush();*/
-					output = new ObjectOutputStream(socket.getOutputStream());
-					output.writeObject(protocol);
-					output.writeObject(data);
+					ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+					output.writeObject(new Data(protocol, data));
+					output.flush();
 					System.out.println("send()");
 				} catch (Exception e) {
 					System.out.println("send() ERROR");
@@ -145,18 +135,14 @@ public class Client extends Application implements Initializable{
 		if(protocol.equals("LogIn")){
 			if(data.toString().equals("YES")){
 				Platform.runLater(()->{
-					lgngui.hide();
+					lgngui.close();
 					lbbgui.show();
-					rmgui.show();
 				});
 			}
 			else if(data.toString().equals("NO")){
 				stopClient();
 				Platform.runLater(()->{
 					lgngui.getIdInput().clear();
-					lgngui.getIpInput().clear();
-					lgngui.getPortInput().clear();
-					
 					Alert alert = new Alert(AlertType.INFORMATION);
 					alert.setTitle("Information");
 					alert.setHeaderText(null);
@@ -165,11 +151,118 @@ public class Client extends Application implements Initializable{
 				});
 			}
 		}
+		else if(protocol.equals("LogOut")){
+			if(data.toString().equals("OK")){
+				Platform.runLater(()->{
+					lbbgui.getUsrlst().clear();
+					lbbgui.close();
+					lgngui.show();
+				});
+				stopClient();
+			}
+		}
 		else if(protocol.equals("NewUser")){
-			usrlst.add(data.toString());
-			
+			Platform.runLater(()->{
+				lbbgui.getUsrlst().add(data.toString());
+				lbbgui.getUsrlst_lv().setItems(null);
+				lbbgui.getUsrlst_lv().setItems(lbbgui.getUsrlst());
+			});
 		}
 		else if(protocol.equals("OldUser")){
+			Vector<String> usr = (Vector<String>) data;
+			Platform.runLater(()->{
+				lbbgui.getUsrlst().addAll(usr);
+				lbbgui.getUsrlst_lv().setItems(lbbgui.getUsrlst());
+			});
+			send("OldRoom","OK");
+		}
+		else if(protocol.equals("UserOut")){
+			Platform.runLater(()->{
+				lbbgui.getUsrlst().remove(data.toString());
+				lbbgui.getUsrlst_lv().setItems(lbbgui.getUsrlst());
+			});
+		}
+		else if(protocol.equals("MakePublic") || protocol.equals("MakePrivate")){
+			if(data.toString().equals("YES")){
+				Platform.runLater(()->{
+					lbbgui.getDialog().close();
+					lbbgui.close();
+					rmgui.show();
+				});
+			}
+			else if(data.toString().equals("NO")){
+				Platform.runLater(()->{
+					lbbgui.getNameInput().clear();
+					Alert alert = new Alert(AlertType.INFORMATION);
+					alert.setTitle("Information");
+					alert.setHeaderText(null);
+					alert.setContentText("Others are using the ROOM NAME you input.\nPlease input other ROOM NAME.");
+					alert.showAndWait();
+				});
+			}
+		}
+		else if(protocol.equals("public") || protocol.equals("private")){
+			Pair<String, Integer> msg = (Pair<String, Integer>)data;
+			RoomItem item = new RoomItem(protocol, msg.getKey(), msg.getValue());
+			Platform.runLater(()->{
+				lbbgui.getRmlst().add(item);
+				lbbgui.getRmlst_tv().setItems(null);
+				lbbgui.getRmlst_tv().setItems(lbbgui.getRmlst());
+			});
+		}
+		else if(protocol.equals("OldRoom")){
+			Vector<Pair<Pair<String, String>, Integer>> msg = (Vector<Pair<Pair<String, String>, Integer>>) data;
+			Platform.runLater(()->{
+				for(int i=0; i<msg.size(); i++){
+					Pair<Pair<String, String>, Integer> _msg = msg.get(i);
+					RoomItem item = new RoomItem(_msg.getKey().getKey(),_msg.getKey().getValue(),_msg.getValue());
+					lbbgui.getRmlst().add(item);
+				}
+				lbbgui.getRmlst_tv().setItems(lbbgui.getRmlst());
+			});
+		}
+		else if(protocol.equals("Message")){
+			Pair<String, String> msg = (Pair<String, String>) data;
+			String message = "FROM_" + msg.getKey() + "\n" + msg.getValue();
+			Platform.runLater(()->{
+				Label lbl = new Label(message);
+				lbl.setFont(new Font("08서울한강체 M", 16));
+				lbl.setTextAlignment(TextAlignment.LEFT);
+				lbl.setStyle("-fx-text-fill: white;" + "-fx-background-radius: 5; " + "-fx-background-color: linear-gradient(to bottom, rgb(182,232,251), rgb(27,183,241));" + 
+						"-fx-border-radius: 5; -fx-border-width: 5; " + "-fx-border-color: linear-gradient(to bottom, rgb(182,232,251), rgb(27,183,241));");
+				
+				rmgui.getMsgScrl().setVvalue(Double.MAX_VALUE);
+				rmgui.getMsgDisplay().getChildren().add(lbl);
+				rmgui.setScrollBarDown(false);
+				rmgui.setScrlBarDown();
+			});
+		}
+		else if(protocol.equals("Imoticon")){
+			Pair<String, String> msg = (Pair<String, String>) data;
+			Platform.runLater(()->{
+				Label lbl = new Label("FROM_" + msg.getKey());
+				lbl.setFont(new Font("08서울한강체 M", 16));
+				lbl.setTextAlignment(TextAlignment.LEFT);
+				lbl.setStyle("-fx-text-fill: white;" + "-fx-background-radius: 5; " + "-fx-background-color: linear-gradient(to bottom, rgb(182,232,251), rgb(27,183,241));" + 
+						"-fx-border-radius: 5; -fx-border-width: 5; " + "-fx-border-color: linear-gradient(to bottom, rgb(182,232,251), rgb(27,183,241));");
+				String _image = RoomGUI.class.getResource("imoticon/"+msg.getValue()+".png").toExternalForm();
+				Image image = new Image(_image);
+				ImageView iv = new ImageView();
+				iv.setImage(image);
+				iv.setFitHeight(100);
+				iv.setPreserveRatio(true);
+				
+				rmgui.getMsgScrl().setVvalue(Double.MAX_VALUE);
+				rmgui.getMsgDisplay().getChildren().add(lbl);
+				rmgui.getMsgDisplay().getChildren().add(iv);
+				rmgui.setScrollBarDown(false);
+				rmgui.setScrlBarDown();
+			});
+		}
+		else if(protocol.equals("EnterRoom")){
+			
+		}
+		else if(protocol.equals("ExitRoom")){
 			
 		}
 	}
@@ -191,8 +284,8 @@ public class Client extends Application implements Initializable{
 		
 		AnchorPane root;
 		Label k2nm_lbl, id_lbl, ip_lbl, port_lbl;
-		private TextField idInput, ipInput, portInput;
-		Button btnLogin;
+		@FXML private TextField idInput, ipInput, portInput;
+		@FXML Button btnLogin;
 		
 		public LoginGUI(){
 			root = new AnchorPane(); root.setId("root");
@@ -244,15 +337,17 @@ public class Client extends Application implements Initializable{
 			
 			Scene scene = new Scene(root);
 			scene.getStylesheets().add(getClass().getResource("LoginGUI.css").toString());
-			this.setResizable(false);
 			this.setScene(scene);
+			this.setResizable(false);
+			this.setOnCloseRequest(event->stopClient());
+			
 		}
 		
 		@Override
 		public void initialize(URL location, ResourceBundle resources) {}
 		
 		public void handlebntLogin(ActionEvent event) {
-			System.out.println("handleBntLogin()");
+			System.out.println("handlebntLogin()");
 			try {
 				userID = idInput.getText();
 				ip = ipInput.getText();
@@ -287,10 +382,18 @@ public class Client extends Application implements Initializable{
 	class LobbyGUI extends Stage implements Initializable{
 
 		AnchorPane root;
-		Label rmlst_lbl; TableView rmlst_tv; TableColumn rmType, rmName, rmNum;
-		Label usrlst_lbl; ListView usrlst_lv;
+		Label rmlst_lbl, usrlst_lbl; 
+		private TableView<RoomItem> rmlst_tv; 
+		TableColumn<RoomItem, String> rmType_col; 
+		TableColumn<RoomItem, String> rmName_col; 
+		TableColumn<RoomItem, Integer> usrNum_col;
+		private ListView<String> usrlst_lv;
 		Button btnEnterRm, btnMakeRm, btnLogout;
 		
+		private ObservableList<String> usrlst;
+		private ObservableList<RoomItem> rmlst;		
+		private String selectedRoomName = null;
+
 		public LobbyGUI(){
 			root = new AnchorPane(); root.setId("root");
 			root.setPrefSize(800.0, 600.0);
@@ -303,56 +406,172 @@ public class Client extends Application implements Initializable{
 			rmlst_tv = new TableView(); rmlst_tv.setId("rmlst_tv");
 			rmlst_tv.setLayoutX(14.0); rmlst_tv.setLayoutY(14.0); rmlst_tv.setPrefSize(500.0, 420.0);
 			root.setLeftAnchor(rmlst_tv, 30.0); root.setTopAnchor(rmlst_tv, 70.0);
+			rmlst_tv.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<RoomItem>() {
+				@Override
+				public void changed(ObservableValue<? extends RoomItem> observable, RoomItem oldValue, RoomItem newValue) {
+					if(newValue!=null){
+						selectedRoomName = newValue.getRoomName();
+					}
+				}
+			});
 			rmlst_tv.setEditable(false);
 			root.getChildren().add(rmlst_tv);
 			
-			rmType = new TableColumn("Room TYPE"); rmType.setId("rmType");
-			rmType.setPrefWidth(150.0); rmType.setResizable(false); rmType.setEditable(false);
-			rmName = new TableColumn("Room NAME"); rmName.setId("rmName");
-			rmName.setPrefWidth(250.0); rmName.setResizable(false); rmName.setEditable(false);
-			rmNum = new TableColumn("Room NUM"); rmNum.setId("rmNum");
-			rmNum.setPrefWidth(100.0); rmNum.setResizable(false); rmNum.setEditable(false);
-			rmlst_tv.getColumns().addAll(rmType, rmName, rmNum);			
+			rmType_col = new TableColumn("Room Type"); rmType_col.setId("rmType");
+			rmType_col.setPrefWidth(150.0); rmType_col.setResizable(false); rmType_col.setEditable(false);
+			rmType_col.setCellValueFactory(new PropertyValueFactory<RoomItem,String>("roomType"));
+			rmName_col = new TableColumn("Room Name"); rmName_col.setId("rmName");
+			rmName_col.setPrefWidth(250.0); rmName_col.setResizable(false); rmName_col.setEditable(false);
+			rmName_col.setCellValueFactory(new PropertyValueFactory<RoomItem,String>("roomName"));
+			usrNum_col = new TableColumn("User Num"); usrNum_col.setId("usrNum_col");
+			usrNum_col.setPrefWidth(50.0); usrNum_col.setResizable(false); usrNum_col.setEditable(false);
+			usrNum_col.setCellValueFactory(new PropertyValueFactory<RoomItem,Integer>("userNum"));
+			rmlst_tv.getColumns().addAll(rmType_col, rmName_col, usrNum_col);
+			rmlst = FXCollections.observableArrayList();
 			
 			usrlst_lbl = new Label("User List"); usrlst_lbl.setId("usrlst_lbl");
 			usrlst_lbl.setLayoutX(739.0); usrlst_lbl.setLayoutY(14.0); usrlst_lbl.setPrefSize(200.0, 50.0);
 			root.setRightAnchor(usrlst_lbl, 30.0); root.setTopAnchor(usrlst_lbl, 10.0);
 			root.getChildren().add(usrlst_lbl);
 			
-			usrlst_lv = new ListView(); usrlst_lv.setId("usrlst_lv");
+			usrlst_lv = new ListView<String>(); usrlst_lv.setId("usrlst_lv");
 			usrlst_lv.setLayoutX(435.0); usrlst_lv.setLayoutY(50.0); usrlst_lv.setPrefSize(200.0, 420.0);
 			root.setRightAnchor(usrlst_lv, 30.0); root.setTopAnchor(usrlst_lv, 70.0);
 			root.getChildren().add(usrlst_lv);
+			usrlst = FXCollections.observableArrayList();
 			
 			btnEnterRm = new Button("Enter Room"); btnEnterRm.setId("btnEnterRm");
 			btnEnterRm.setLayoutX(30.0); btnEnterRm.setLayoutY(474.0); btnEnterRm.setPrefSize(200.0, 50.0);
 			root.setBottomAnchor(btnEnterRm, 30.0); root.setLeftAnchor(btnEnterRm, 30.0);
+			btnEnterRm.setOnAction(event->handlebtnEnterRm(event));
 			root.getChildren().add(btnEnterRm);
 			
 			btnMakeRm = new Button("Make Room"); btnMakeRm.setId("btnMakeRm");
 			btnMakeRm.setLayoutX(239.0); btnMakeRm.setLayoutY(474.0); btnMakeRm.setPrefSize(200.0, 50.0);
+			btnMakeRm.setOnAction(event->handlebtnMakeRm(event));
 			root.setBottomAnchor(btnMakeRm, 30.0); root.setLeftAnchor(btnMakeRm, 250.0);
 			root.getChildren().add(btnMakeRm);
 			
 			btnLogout = new Button("Log Out"); btnLogout.setId("btnLogout");
 			btnLogout.setLayoutX(570.0); btnLogout.setLayoutY(474.0); btnLogout.setPrefSize(200.0, 50.0);
+			btnLogout.setOnAction(event->handlebtnLogout(event));
 			root.setBottomAnchor(btnLogout, 30.0); root.setRightAnchor(btnLogout, 30.0);
 			root.getChildren().add(btnLogout);
 			
 			Scene scene = new Scene(root);
 			scene.getStylesheets().add(getClass().getResource("LobbyGUI.css").toString());
-			this.setResizable(false);
 			this.setScene(scene);
+			this.setResizable(false);
+			this.setOnCloseRequest(event->send("LogOut",userID));
+		}
+
+		// Event
+		void handlebtnEnterRm(ActionEvent event) {
+			System.out.println("handlebtnEnterRm");
+			if(selectedRoomName!=null){
+				System.out.println(selectedRoomName);
+				send("EnterRoom",selectedRoomName);
+			}
 		}
 		
+		// dialog //
+		Label txt_lbl;
+		CheckBox check;
+		private TextField nameInput;
+		private TextField pwInput;
+		private Button btnMake;
+		private Stage dialog;
+		void handlebtnMakeRm(ActionEvent event) {
+			System.out.println("handlebtnMakeRm");	
+			try {
+				dialog = new Stage(StageStyle.UTILITY);
+				dialog.initModality(Modality.WINDOW_MODAL);
+				dialog.initOwner(this);
+				dialog.setTitle("Make Room");
+				
+				Parent parent = FXMLLoader.load(getClass().getResource("custom_dialog.fxml"));
+				txt_lbl = (Label) parent.lookup("#txt_lbl");
+				txt_lbl.setText("You use all Captiabl and Small letter\n and Number when you input PASSWORD");
+				check = (CheckBox) parent.lookup("#check");
+				check.setOnAction(event1->handlecheck(event1));
+				nameInput = (TextField) parent.lookup("#nameInput");
+				pwInput = (TextField) parent.lookup("#pwInput");
+				pwInput.setDisable(true);
+				btnMake = (Button) parent.lookup("#btnMake");
+				btnMake.setOnAction(event2->handlebtnMake(event2));
+				Scene scene = new Scene(parent);
+				dialog.setScene(scene);
+				dialog.setResizable(false);
+				dialog.show();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		String protocol="MakePublic", name, pw;
+		void handlecheck(ActionEvent event) {
+			System.out.println("_handlecheck");
+			if(check.isSelected()) {
+				protocol = "MakePrivate";
+				pwInput.setDisable(false);
+			}
+			else {
+				protocol = "MakePublic";
+				pwInput.setDisable(true);
+			}
+		}	
+		void handlebtnMake(ActionEvent event4) {
+			System.out.println("_handlebtnMake");
+			name = nameInput.getText();
+			pw = pwInput.getText();
+			if(protocol.equals("MakePrivate")){
+				if(new PrivateRoom().checkRoomName(name) && new PrivateRoom().checkSettingPW(pw))
+					send(protocol,new Pair<String, String>(name, pw));
+				else {
+					nameInput.clear();
+					pwInput.clear();
+				}
+			}
+			else if(protocol.equals("MakePublic")){
+				if(new PublicRoom().checkRoomName(name))
+					send(protocol,name);
+				else nameInput.clear();
+			}
+		}
+		
+		void handlebtnLogout(ActionEvent event) {
+			System.out.println("handlebtnLogout");
+			send("LogOut",userID);
+		}
+
 		@Override
 		public void initialize(URL location, ResourceBundle resources) {}
-	}
+		
+		// Getter
+		public ListView<String> getUsrlst_lv() {
+			return usrlst_lv;
+		}
+		public ObservableList<String> getUsrlst() {
+			return usrlst;
+		}
+		public Stage getDialog() {
+			return dialog;
+		}
+		public TextField getNameInput() {
+			return nameInput;
+		}
+		public ObservableList<RoomItem> getRmlst() {
+			return rmlst;
+		}
+		public TableView<RoomItem> getRmlst_tv() {
+			return rmlst_tv;
+		}
+		
+	} // class LobbyGUI END
 	
 	/* RoomGUI */
 	class RoomGUI extends Stage implements Initializable{
 		AnchorPane root;
-		ScrollPane msgScrl; VBox msgDisplay;
+		private ScrollPane msgScrl; private VBox msgDisplay;
 		TextArea msgInput; Button btnSndMsg;
 		TilePane imtcInput; Button btnSndImtc;
 		Label info_lbl; TextField info;
@@ -363,6 +582,7 @@ public class Client extends Application implements Initializable{
 		static final int imtcNum = 82;
 		Button[] btn = new Button[imtcNum];
 		String selectedImtc;
+		String imtcName;
 	
 		public RoomGUI(){
 			root = new AnchorPane(); root.setId("root");
@@ -406,7 +626,8 @@ public class Client extends Application implements Initializable{
 			imtcInput = new TilePane(); imtcInput.setId("imtcInput");
 			imtcInput.setPrefSize(465.0, 200.0); imtcInput.setHgap(5.0); imtcInput.setVgap(5.0);
 			for(int i=0; i<imtcNum; i++){
-				String image = RoomGUI.class.getResource("imoticon/"+String.valueOf(i+1)+".png").toExternalForm();
+				String name = String.valueOf(i+1);
+				String image = RoomGUI.class.getResource("imoticon/"+name+".png").toExternalForm();
 				btn[i] = new Button();
 				btn[i].setPrefSize(40.0, 40.0);
 				btn[i].setStyle("-fx-background-image: url(" + image + ");" + "-fx-background-position: center center;" + "-fx-background-size: 40 40;");
@@ -414,6 +635,7 @@ public class Client extends Application implements Initializable{
 					@Override
 					public void handle(MouseEvent e){
 						selectedImtc = image;
+						imtcName = name;
 					}
 				});
 				imtcInput.getChildren().add(btn[i]);
@@ -422,6 +644,7 @@ public class Client extends Application implements Initializable{
 			
 			btnSndImtc = new Button("Send"); btnSndImtc.setId("btnSndImtc");
 			btnSndImtc.setPrefSize(60.0, 30.0);
+			btnSndImtc.setOnAction(event->handleSndImtcBtnAction(event));
 			_hb2.getChildren().add(btnSndImtc);
 			
 			VBox vb2 = new VBox();
@@ -468,19 +691,80 @@ public class Client extends Application implements Initializable{
 			
 			Scene scene = new Scene(root);
 			scene.getStylesheets().add(getClass().getResource("RoomGUI.css").toString());
-			this.setResizable(false);
 			this.setScene(scene);
+			this.setResizable(false);
+			this.setOnCloseRequest(event->send("LogOut",userID));
 		}
 	
 		@Override
 		public void initialize(URL location, ResourceBundle resources) {}
 
-		/* Event */
-		public void handleBtnSndMsg(ActionEvent event){
-			String data = msgInput.getText();
-			send("Message", data);
+		// Event //
+		private boolean scrollBarDown = true;
+		public void setScrlBarDown(){
+			msgScrl.vvalueProperty().addListener(new ChangeListener<Number>() {
+				@Override
+				public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+					if(!scrollBarDown){
+						msgScrl.setVvalue(msgScrl.getVmax());
+						scrollBarDown = true;
+					}
+				}
+				
+			});
 		}
-	}
+		private void handleBtnSndMsg(ActionEvent event){
+			String msg = msgInput.getText();
+			if(!msg.isEmpty()){
+				Label lbl = new Label(msg);
+				lbl.setFont(new Font("08서울한강체 M", 16));
+				lbl.setTextAlignment(TextAlignment.LEFT);
+				lbl.setStyle("-fx-text-fill: white;" + "-fx-background-radius: 5; " + "-fx-background-color: linear-gradient(to bottom, rgb(146,200,230), rgb(12,112,169));" + 
+						"-fx-border-radius: 5; -fx-border-width: 5; " + "-fx-border-color: linear-gradient(to bottom, rgb(146,200,230), rgb(12,112,169));");
+
+				msgScrl.setVvalue(Double.MAX_VALUE);
+				msgDisplay.getChildren().add(lbl);
+				msgInput.clear();
+				scrollBarDown = false;
+				setScrlBarDown();
+
+				send("Message", msg);
+			}			
+		}
+		private void handleSndImtcBtnAction(ActionEvent e){ // when send imoticon
+			if(selectedImtc!=null){
+				Image image = new Image(selectedImtc);
+				ImageView iv = new ImageView();
+				iv.setImage(image);
+				iv.setFitHeight(100);
+				iv.setPreserveRatio(true);
+				
+				Platform.runLater(()->{
+					msgScrl.setVvalue(Double.MAX_VALUE);
+					msgDisplay.getChildren().add(iv);
+					selectedImtc = null;
+					scrollBarDown = false;
+				});
+				setScrlBarDown();
+				
+				send("Imoticon",imtcName);
+			}
+		}
+
+	
+		// Getter //
+		public ScrollPane getMsgScrl() {
+			return msgScrl;
+		}
+		public VBox getMsgDisplay() {
+			return msgDisplay;
+		}
+		public void setScrollBarDown(boolean scrollBarDown) {
+			this.scrollBarDown = scrollBarDown;
+		}
+		
+		
+	} // class RoomGUI END
 
 
 } // class Client END
