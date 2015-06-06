@@ -111,7 +111,8 @@ public class Server extends JFrame implements ActionListener {
 						user.start();
 
 					} catch (IOException e) {
-						break;
+						e.printStackTrace();
+						//break;
 					}
 				}
 			}
@@ -195,11 +196,12 @@ public class Server extends JFrame implements ActionListener {
 					Send_message("OldRoom/"+r.Room_name);
 				}
 				
-				Send_message("room_list_update/");
+				Send_message("room_list_update/ ");
 				
 				user_vc.add(this); 
 				
-				BroadCast("user_list_update/");
+				BroadCast("user_list_update/ ");
+				
 			} catch (IOException e) {
 
 				JOptionPane.showMessageDialog(null, "stream setting error", "info",
@@ -239,19 +241,20 @@ public class Server extends JFrame implements ActionListener {
 			String protocol = st.nextToken();
 			String message = st.nextToken(); 
 
-			System.out.println("Protocol :" + protocol);
-			System.out.println("Message :" + message);
+			System.out.println("Protocol : " + protocol);
+			System.out.println("Message : " + message);
 
 			if (protocol.equals("Note")) {
-				st = new StringTokenizer(message, "@"); 
 														
-
-				String user = st.nextToken();
 				String note = st.nextToken();
+				
+				System.out.println("receiver : "+message);
+				System.out.println("message : "+note);
+				
 				for (int i = 0; i < user_vc.size(); i++) {
 					UserInfo u = (UserInfo) user_vc.elementAt(i);
-					if (u.Nickname.equals(user)) {
-						u.Send_message("Note/" + Nickname + "@" + note);
+					if (u.Nickname.equals(message)) {
+						u.Send_message("Note/" + Nickname + "/" + note);
 					}
 				}
 				System.out.println(note);
@@ -290,7 +293,7 @@ public class Server extends JFrame implements ActionListener {
 					RoomInfo r = (RoomInfo) room_vc.elementAt(i);
 					if(r.Room_name.equals(message)){
 						// new user alarm
-						r.BroadCast_Room("Chatting/info/****"+Nickname+"enter****");
+						r.BroadCast_Room("Chatting/info/**** "+Nickname+" enter****");
 						
 						// user add
 						r.Add_User(this);
