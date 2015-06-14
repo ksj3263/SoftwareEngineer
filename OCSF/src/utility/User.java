@@ -9,7 +9,13 @@ public class User{
 	public User(String id){
 		setID(id);
 	}
-
+	
+	/* Operation */
+	public boolean checkID(String id){
+		if(id.length()<2 || 20<id.length()) return false;
+		return true;
+	}
+	
 	/* Getter and Setter */
 	public String getID() {
 		return id;
@@ -23,4 +29,4 @@ public class User{
 	public void setInRoom(boolean inRoom) {
 		this.inRoom = inRoom;
 	}
-}
+} // class User END

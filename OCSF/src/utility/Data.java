@@ -14,7 +14,7 @@ public class Data implements Serializable{
 	
 	@Override
 	public String toString() {
-		return "protocol: "+getProtocol()+" data: "+getData();
+		return "PROTOCOL: "+getProtocol()+" DATA: "+getData();
 	}
 	
 	/* Getter and Setter */

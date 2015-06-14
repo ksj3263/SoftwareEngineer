@@ -54,25 +54,29 @@ import javafx.util.Pair;
 
 public class Client extends Application implements Initializable{
 
-	Socket socket;
-	String userID;
-	String ip;
+	private Socket socket;
+	private String userID;
+	private String ip;
 	int port;
 	
-	LoginGUI lgngui = new LoginGUI();
-	LobbyGUI lbbgui = new LobbyGUI();
-	RoomGUI rmgui = new RoomGUI();
-
+	private LoginGUI lgngui = new LoginGUI();
+	private LobbyGUI lbbgui = new LobbyGUI();
+	private RoomGUI rmgui = new RoomGUI();
+ 
+	
 	void startClient(){
 		Thread thread = new Thread(){
 			@Override
 			public void run(){
 				try {
+					//System.out.println("startClient()");
 					socket = new Socket();
 					socket.connect(new InetSocketAddress(ip,port));
-					System.out.println("startClient()");
+					
+					send("LogIn", userID);
+					receive();
 				} catch (Exception e) {
-					System.out.println("startClient() ERROR");
+					//System.out.println("startClient() ERROR");
 					Platform.runLater(()->{
 						lgngui.getIdInput().clear();
 						lgngui.getIpInput().clear();
@@ -82,64 +86,65 @@ public class Client extends Application implements Initializable{
 						stopClient();
 					}
 				}
-				send("LogIn", userID);
-				receive();
 			}
 		};
 		thread.start();
-	}
+	} // method startClient END
+	
 	void stopClient(){
 		try {
-			System.out.println("stopClient()");
+			//System.out.println("stopClient()");
 			if(socket!=null && !socket.isClosed()){
 				socket.close();
 			}
 		} catch (IOException e) {
-			System.out.println("stropClient() ERROR");
+			//System.out.println("stopClient() ERROR");
 		}
-	}
+	} // method stopClient END
+	
 	void receive(){
 		while(true){
 			try {
+				//System.out.println("receive()");
 				ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
 				Data data = (Data)input.readObject();
-				System.out.println("receive()\n" + data.toString());
+				System.out.println(data.toString());
 				inMessage(data.getProtocol(), data.getData());
 			} catch (Exception e) {
-				//e.printStackTrace();
-				System.out.println("receive() ERROR");
+				//System.out.println("receive() ERROR");
 				stopClient();
 				break;
 			}
 		}
-	}
+	} // method receive END
+	
 	void send(String protocol, Object data){
 		Thread thread = new Thread(){
 			@Override
 			public void run(){
+				//System.out.println("send()");
 				try {
 					ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
 					output.writeObject(new Data(protocol, data));
 					output.flush();
-					System.out.println("send()");
 				} catch (Exception e) {
-					System.out.println("send() ERROR");
+					//System.out.println("send() ERROR");
 					stopClient();
 				}
 			}
 		};
 		thread.start();
-	}
+	} // method send END
 	
 	void inMessage(String protocol, Object data){
-		if(protocol.equals("LogIn")){
-			if(data.toString().equals("YES")){
+		if(protocol.equals("LogIn")){ 
+			if(data.toString().equals("YES")){ // userID is not overlap
 				Platform.runLater(()->{
 					lgngui.close();
 					lbbgui.show();
 				});
 			}
-			else if(data.toString().equals("NO")){
+			else if(data.toString().equals("NO")){ // userID is overlap
 				stopClient();
 				Platform.runLater(()->{
 					lgngui.getIdInput().clear();
@@ -150,7 +155,7 @@ public class Client extends Application implements Initializable{
 					alert.showAndWait();
 				});
 			}
-		}
+		} 
 		else if(protocol.equals("LogOut")){
 			if(data.toString().equals("OK")){
 				Platform.runLater(()->{
@@ -226,7 +231,7 @@ public class Client extends Application implements Initializable{
 			String message = "FROM_" + msg.getKey() + "\n" + msg.getValue();
 			Platform.runLater(()->{
 				Label lbl = new Label(message);
-				lbl.setFont(new Font("08서울한강체 M", 16));
+				lbl.setFont(new Font("08�꽌�슱�븳媛뺤껜 M", 16));
 				lbl.setTextAlignment(TextAlignment.LEFT);
 				lbl.setStyle("-fx-text-fill: white;" + "-fx-background-radius: 5; " + "-fx-background-color: linear-gradient(to bottom, rgb(182,232,251), rgb(27,183,241));" + 
 						"-fx-border-radius: 5; -fx-border-width: 5; " + "-fx-border-color: linear-gradient(to bottom, rgb(182,232,251), rgb(27,183,241));");
@@ -241,7 +246,7 @@ public class Client extends Application implements Initializable{
 			Pair<String, String> msg = (Pair<String, String>) data;
 			Platform.runLater(()->{
 				Label lbl = new Label("FROM_" + msg.getKey());
-				lbl.setFont(new Font("08서울한강체 M", 16));
+				lbl.setFont(new Font("08�꽌�슱�븳媛뺤껜 M", 16));
 				lbl.setTextAlignment(TextAlignment.LEFT);
 				lbl.setStyle("-fx-text-fill: white;" + "-fx-background-radius: 5; " + "-fx-background-color: linear-gradient(to bottom, rgb(182,232,251), rgb(27,183,241));" + 
 						"-fx-border-radius: 5; -fx-border-width: 5; " + "-fx-border-color: linear-gradient(to bottom, rgb(182,232,251), rgb(27,183,241));");
@@ -265,7 +270,7 @@ public class Client extends Application implements Initializable{
 		else if(protocol.equals("ExitRoom")){
 			
 		}
-	}
+	} // method inMessage END
 	
 	/* GUI */
 	@Override
@@ -277,62 +282,63 @@ public class Client extends Application implements Initializable{
 	public static void main(String[] args) {
 		launch(args);
 	}
-	
 
 	/* LoginGUI */
 	class LoginGUI extends Stage implements Initializable{
 		
-		AnchorPane root;
-		Label k2nm_lbl, id_lbl, ip_lbl, port_lbl;
-		@FXML private TextField idInput, ipInput, portInput;
-		@FXML Button btnLogin;
+		private AnchorPane root;
+		private ImageView k2nm_logo;
+		private Label id_lbl, ip_lbl, port_lbl;
+		private TextField idInput, ipInput, portInput;
+		private Button btnLogin;
 		
 		public LoginGUI(){
 			root = new AnchorPane(); root.setId("root");
-			root.setPrefSize(400, 280);
+			root.setPrefSize(400, 600);
 			
-			k2nm_lbl = new Label("K2NMchat"); k2nm_lbl.setId("k2nm_lbl");
-			k2nm_lbl.setLayoutX(25.0); k2nm_lbl.setLayoutY(15.0); k2nm_lbl.setPrefSize(350.0, 50.0);
-			root.setTopAnchor(k2nm_lbl, 15.0);
-			root.getChildren().add(k2nm_lbl);
+			String url = LoginGUI.class.getResource("style/logo.jpg").toExternalForm();
+			k2nm_logo = new ImageView(url);
+			k2nm_logo.setLayoutX(25.0); k2nm_logo.setLayoutY(15.0);
+			root.setTopAnchor(k2nm_logo, 15.0);
+			root.getChildren().add(k2nm_logo);
 			
 			id_lbl = new Label("ID"); id_lbl.setId("id_lbl");
-			id_lbl.setLayoutX(25.0); id_lbl.setLayoutY(100.0); id_lbl.setPrefSize(130.0, 25.0);
+			id_lbl.setLayoutX(25.0); id_lbl.setLayoutY(300.0); id_lbl.setPrefSize(130.0, 25.0);
 			root.setLeftAnchor(id_lbl, 25.0);
 			root.getChildren().add(id_lbl);
 			
 			ip_lbl = new Label("Server IP"); ip_lbl.setId("ip_lbl");
-			ip_lbl.setLayoutX(25.0); ip_lbl.setLayoutY(140.0); ip_lbl.setPrefSize(130.0, 25.0);
+			ip_lbl.setLayoutX(25.0); ip_lbl.setLayoutY(350.0); ip_lbl.setPrefSize(130.0, 25.0);
 			root.setLeftAnchor(ip_lbl, 25.0);
 			root.getChildren().add(ip_lbl);
 			
 			port_lbl = new Label("Server port"); port_lbl.setId("port_lbl");
-			port_lbl.setLayoutX(25.0); port_lbl.setLayoutY(180.0); port_lbl.setPrefSize(130.0, 25.0);
+			port_lbl.setLayoutX(25.0); port_lbl.setLayoutY(400.0); port_lbl.setPrefSize(130.0, 25.0);
 			root.setLeftAnchor(port_lbl, 25.0);
 			root.getChildren().add(port_lbl);
 			
 			idInput = new TextField(); idInput.setId("idInput");
-			idInput.setLayoutX(110.0); idInput.setLayoutY(100.0); idInput.setPrefSize(200.0, 25.0);
+			idInput.setLayoutX(110.0); idInput.setLayoutY(300.0); idInput.setPrefSize(220.0, 25.0);
 			idInput.setPromptText("length of ID: 2 ~ 20");
 			root.setRightAnchor(idInput, 25.0);
 			root.getChildren().add(idInput);
 			
 			ipInput = new TextField(); ipInput.setId("ipInput");
-			ipInput.setLayoutX(110.0); ipInput.setLayoutY(140.0); ipInput.setPrefSize(200.0, 25.0);
+			ipInput.setLayoutX(110.0); ipInput.setLayoutY(350.0); ipInput.setPrefSize(220.0, 25.0);
 			ipInput.setPromptText("0.0.0.0 ~ 255.255.255.255");
 			root.setRightAnchor(ipInput, 25.0);
 			root.getChildren().add(ipInput);
 			
 			portInput = new TextField(); portInput.setId("portInput");
-			portInput.setLayoutX(110.0); portInput.setLayoutY(180.0); portInput.setPrefSize(200.0, 25.0);
+			portInput.setLayoutX(110.0); portInput.setLayoutY(400.0); portInput.setPrefSize(220.0, 25.0);
 			portInput.setPromptText("1111 ~ 9999");
 			root.setRightAnchor(portInput, 25.0);
 			root.getChildren().add(portInput);
 			
 			btnLogin = new Button("Log In"); btnLogin.setId("btnLogin");
-			btnLogin.setLayoutX(155); btnLogin.setLayoutY(245); btnLogin.setPrefSize(90,30);
+			btnLogin.setLayoutX(155); btnLogin.setLayoutY(245); btnLogin.setPrefSize(100,50);
 			btnLogin.setOnAction(event->handlebntLogin(event));
-			root.setBottomAnchor(btnLogin,25.0);
+			root.setBottomAnchor(btnLogin,50.0);
 			root.getChildren().add(btnLogin);
 			
 			Scene scene = new Scene(root);
@@ -347,7 +353,7 @@ public class Client extends Application implements Initializable{
 		public void initialize(URL location, ResourceBundle resources) {}
 		
 		public void handlebntLogin(ActionEvent event) {
-			System.out.println("handlebntLogin()");
+			//System.out.println("handlebntLogin()");
 			try {
 				userID = idInput.getText();
 				ip = ipInput.getText();
@@ -358,7 +364,7 @@ public class Client extends Application implements Initializable{
 				
 				startClient();		
 			} catch (Exception e) {
-				System.out.println("handlebtnLogin ERROR");
+				//System.out.println("handlebtnLogin ERROR");
 				idInput.clear();
 				ipInput.clear();
 				portInput.clear();
@@ -376,7 +382,7 @@ public class Client extends Application implements Initializable{
 			return portInput;
 		}
 
-	}
+	} // class LoginGUI END
 
 	/* LobbyGUI */
 	class LobbyGUI extends Stage implements Initializable{
@@ -717,7 +723,7 @@ public class Client extends Application implements Initializable{
 			String msg = msgInput.getText();
 			if(!msg.isEmpty()){
 				Label lbl = new Label(msg);
-				lbl.setFont(new Font("08서울한강체 M", 16));
+				lbl.setFont(new Font("08�꽌�슱�븳媛뺤껜 M", 16));
 				lbl.setTextAlignment(TextAlignment.LEFT);
 				lbl.setStyle("-fx-text-fill: white;" + "-fx-background-radius: 5; " + "-fx-background-color: linear-gradient(to bottom, rgb(146,200,230), rgb(12,112,169));" + 
 						"-fx-border-radius: 5; -fx-border-width: 5; " + "-fx-border-color: linear-gradient(to bottom, rgb(146,200,230), rgb(12,112,169));");
