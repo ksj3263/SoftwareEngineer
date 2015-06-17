@@ -9,6 +9,7 @@ import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,13 +36,14 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import javafx.util.Pair;
 
+
 public class Server extends Application implements Initializable{
 
 	ExecutorService executorService;
 	ServerSocket serverSocket;
 	List<ToClient> connections = new Vector<ToClient>();
 	int port;
-	
+	StringTokenizer st;
 	RoomList rmlst = RoomList.getInstance();
 	UserList usrlst = UserList.getInstance();
 	
@@ -279,8 +281,24 @@ public class Server extends Application implements Initializable{
 					}
 				}
 			}
-			else if(protocol.equals("File")){
-				
+			else if(protocol.equals("FileRequest")){
+				for(ToClient client:connections){
+					if(client.getUserID().equals(data) /*&& client!=this*/){
+						Pair<String, String> msg = new Pair<String, String>(userID, data.toString());
+						client.send("FileRequest", msg);
+					}
+				}
+			}
+			else if(protocol.equals("FileAccept")){
+				st = new StringTokenizer((String) data, "/");
+				String target = st.nextToken();
+ 
+				for(ToClient client:connections){
+					if(client.getUserID().equals(target) /*&& client!=this*/){
+						Pair<String, String> msg = new Pair<String, String>(userID, data.toString());
+						client.send("FileAccept", msg);
+					}
+				}
 			}
 		}
 		
