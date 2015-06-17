@@ -1,0 +1,27 @@
+.text-area{
+	-fx-background-color: rgb(19,152,255);
+}
+
+.text-area .scroll-pane{
+	-fx-background-color: transparent;
+}
+
+.text-area .scroll-pane .viewport{
+	-fx-background-color: transparent;
+}
+
+.text-area .scroll-pane .content{
+	-fx-background-color: transparent
+}
+
+Label{
+	-fx-font-size: 20;
+	-fx-text-fill: rgb(19,152,255);
+	-fx-font-family: "Hobo Std";
+}
+
+Button{
+	-fx-font-size: 20;
+	-fx-text-fill: rgb(19,152,255);
+	-fx-font-family: "Hobo Std";
+}

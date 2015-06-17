@@ -6,8 +6,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.layout.VBox?>
 
-
-<VBox prefHeight="200.0" prefWidth="300.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8">
+<VBox prefHeight="200.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <CheckBox fx:id="check" mnemonicParsing="false" prefHeight="50.0" prefWidth="300.0" text="Privacy" />
       <HBox prefHeight="50.0" prefWidth="300.0" spacing="10.0">
@@ -19,7 +18,7 @@
       <HBox prefHeight="40.0" prefWidth="300.0" spacing="10.0">
          <children>
             <Label fx:id="pw_lbl" prefHeight="25.0" prefWidth="70.0" text="Password" />
-            <TextField fx:id="pwInput" prefHeight="25.0" prefWidth="200.0" promptText="length: 4 ~ 30" />
+            <PasswordField fx:id="pwInput" prefHeight="25.0" prefWidth="200.0" promptText="length: 4 ~ 30" />
          </children>
       </HBox>
       <Label fx:id="txt_lbl" prefHeight="50.0" prefWidth="300.0">
