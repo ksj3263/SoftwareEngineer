@@ -1,5 +1,6 @@
 package client;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -10,6 +11,9 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ResourceBundle;
 import java.util.Vector;
+
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 
 import utility.Data;
 import utility.FileClient;
@@ -66,6 +70,8 @@ public class Client extends Application implements Initializable {
 	LoginGUI lgngui = new LoginGUI();
 	LobbyGUI lbbgui = new LobbyGUI();
 	RoomGUI rmgui = new RoomGUI();
+
+	JFileChooser jfc = new JFileChooser();
 
 	void startClient() {
 		Thread thread = new Thread() {
@@ -271,21 +277,21 @@ public class Client extends Application implements Initializable {
 
 		} else if (protocol.equals("FileRequest")) {
 			/*
-			String localHostIpAddress = null;
-			try {
-				localHostIpAddress = InetAddress.getLocalHost().getHostAddress();
-			} catch (UnknownHostException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			send("FileAccept",localHostIpAddress);
-			*/
+			 * String localHostIpAddress = null; try { localHostIpAddress =
+			 * InetAddress.getLocalHost().getHostAddress(); } catch
+			 * (UnknownHostException e) { // TODO Auto-generated catch block
+			 * e.printStackTrace(); } send("FileAccept",localHostIpAddress);
+			 */
 			FileServer ob = new FileServer();
 			ob.serverStart();
-			send("FileAccept","172.0.0.1");
-			
+			send("FileAccept", "172.0.0.1");
+
 		} else if (protocol.equals("FileAccept")) {
-			FileClient temp = new FileClient((String) data,"c:\\Test\\123.txt");
+			JFrame window = new JFrame();
+			int result = jfc.showOpenDialog(window);
+			if (result == JFileChooser.APPROVE_OPTION) {
+				FileClient temp = new FileClient("127.0.0.1",jfc.getSelectedFile().toString());
+			}
 		}
 	}
 
