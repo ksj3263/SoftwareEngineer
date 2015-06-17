@@ -5,17 +5,19 @@ import java.net.*;
 
 // 사용자 인터페이스 구성 없이 콘솔 기반으로 작성함.
 public class FileClient {
-	public static void main(String[] args) {
-		int port = 5555; // 서버의 포트 번호
-		String host = "127.0.0.1"; // 서버의 ip 주소
-		Socket sc = null;
-		// ObjectInputStream ois = null;
-		ObjectOutputStream oos = null;
-		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		String file;
+	private int port = 5555; // 서버의 포트 번호
+	private String host = null; // 서버의 ip 주소
+	private Socket sc = null;
+	// ObjectInputStream ois = null;
+	private ObjectOutputStream oos = null;
+	private BufferedReader br = new BufferedReader(new InputStreamReader(
+			System.in));
+	private String file;
+
+	public FileClient(String ipInfo,String fileInfo) {
+		host = ipInfo;
 		try {
-			System.out.print("전송할 파일(경로명://파일명)?"); // C:\Test\파일명
-			file = br.readLine();
+			file = fileInfo;
 			File dir = new File(file);
 			if (!dir.exists()) {
 				System.out.println("파일이 존재하지 않습니다!");
@@ -57,5 +59,8 @@ public class FileClient {
 		} catch (Exception e) {
 			System.out.println(e.toString());
 		}
+	}
+	public static void main(String[] args) {
+		FileClient temp = new FileClient("127.0.0.1","c:\\Test\\123.txt");
 	}
 }
