@@ -1,19 +1,21 @@
 ScrollPane{
 	-fx-hbar-policy: never;
 }
+
 Button{
-	-fx-text-fill: #545454;
+	-fx-text-fill: rgb(19,152,255);
+	-fx-font-family: "Hobo Std";
 }
 
 #root{
 	-fx-background-color: rgb(19,152,255);
-	-fx-background-position: center;
 }
 
 #msgInput{
 	-fx-font-size: 16;
-	-fx-text-fill: #545454;
+	-fx-text-fill: rgb(19,152,255);
 }
+
 #btnSndMsg{
 	-fx-font-size: 14;
 }
@@ -22,20 +24,15 @@ Button{
 	-fx-font-size: 14;
 }
 
-#info_lbl{
-	-fx-font-size: 24;
-	-fx-text-fill: white;
-	-fx-alignment: center-right;
-}
-
 #usrlst_lbl{
-	-fx-font-size: 28;
+	-fx-font-size: 40;
 	-fx-text-fill: white;
 	-fx-alignment: center;
+	-fx-font-family: "Hobo Std";
 }
-#usrlst_view{
-	-fx-font-size: 16;
-	-fx-text-fill: #545454;
+
+#usrlst_lv{
+	-fx-font-size: 14;
 }
 
 #btnSndFile{

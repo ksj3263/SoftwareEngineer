@@ -18,8 +18,8 @@ TextField {
 }
 
 #btnLogin{
-	-fx-font-size: 16;
-	-fx-text-fill: #545454;
+	-fx-font-size: 20;
+	-fx-text-fill: rgb(19,152,255);
 	-fx-font-family: "Hobo Std";
 }
 

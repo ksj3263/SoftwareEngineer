@@ -7,13 +7,13 @@ import javafx.util.Pair;
 public class RoomList {
 
 	private Vector<Room> rmlst;
-	private Vector<Pair<Pair<String,String>,Integer>> sendlst;
+	private Vector<Pair<String,String>> sendlst;
 	
 	/* Singleton Pattern */
 	private static volatile RoomList roomList;
 	private RoomList(){
 		rmlst = new Vector<Room>();
-		sendlst = new Vector<Pair<Pair<String,String>,Integer>>();
+		sendlst = new Vector<Pair<String,String>>();
 	}
 	public static RoomList getInstance(){
 		if(roomList == null){
@@ -28,12 +28,7 @@ public class RoomList {
 	/* Operation */
 	public void addRoom(Room r){
 		rmlst.add(r);
-		if(r.isPrivacyRoom()){
-			sendlst.add(new Pair<Pair<String,String>, Integer>(new Pair("private", r.getRoomName()), r.getInUserNum())); 			
-		}
-		else{
-			sendlst.add(new Pair<Pair<String,String>, Integer>(new Pair("public", r.getRoomName()), r.getInUserNum())); 			
-		}
+		sendlst.add(new Pair<String,String>(r.getRoomType(),r.getRoomName()));
 	}
 	
 	public int findRoomByRoomName(String roomName){
@@ -50,13 +45,13 @@ public class RoomList {
 		return true;
 	}
 	
-	public void removeRoom(Room r){
-		int index = findRoomByRoomName(r.getRoomName());
+	public void removeRoomByRoomName(String roomName){
+		int index = findRoomByRoomName(roomName);
 		if(index==-1)
 			System.out.println("not exist room");
 		else rmlst.remove(index);
 	}
-
+	
 	public int getRoomNum(){
 		return rmlst.size();
 	}
@@ -65,7 +60,8 @@ public class RoomList {
 		int index = findRoomByRoomName(roomName);
 		return rmlst.get(index);
 	}
-	public Vector<Pair<Pair<String, String>, Integer>> getSendlst() {
+	
+	public Vector<Pair<String, String>> getSendlst() {
 		return sendlst;
 	}
 

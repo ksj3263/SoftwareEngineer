@@ -6,6 +6,7 @@ public class User{
 	private boolean inRoom;
 	
 	/* Constructor */
+	public User(){}
 	public User(String id){
 		setID(id);
 	}

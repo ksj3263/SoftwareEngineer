@@ -1,22 +1,40 @@
-Button{
-	-fx-font-family: "DX만화2B";
-	-fx-text-fill: #545454;
-	-fx-font-size: 20;
+#root{
+	-fx-background-color: rgb(19,152,255);
 }
 
-#root{
-	-fx-background-image: url("style/sky.png");
-	-fx-background-position: center;
+Label{
+	-fx-text-fill: rgb(19,152,255);
+	-fx-font-family: "Hobo Std";
+	-fx-font-size: 16;
 }
 
 #rmlst_lbl{
-	-fx-font-size: 32;
-	-fx-font-family: "DX만화2B";
+	-fx-font-size: 40;
 	-fx-text-fill: white;
-}
-#usrlst_lbl{
-	-fx-font-size: 32;
-	-fx-font-family: "DX만화2B";
-	-fx-text-fill: white;
+	-fx-font-family: "Hobo Std";
 }
 
+#rmType_col{
+	-fx-font-size: 14;
+}
+
+#rmName_col{
+	-fx-font-size: 14;
+}
+
+#usrlst_lbl{
+	-fx-font-size: 40;
+	-fx-text-fill: white;
+	-fx-font-family: "Hobo Std";
+}
+
+#usrlst_lv{
+	-fx-font-size: 14;
+}
+
+
+Button{
+	-fx-text-fill: rgb(19,152,255);
+	-fx-font-size: 20;
+	-fx-font-family: "Hobo Std";
+}

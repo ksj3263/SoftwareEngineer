@@ -13,10 +13,7 @@ import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import client.RoomItem;
 import utility.Data;
-import utility.PrivateRoom;
-import utility.PublicRoom;
 import utility.Room;
 import utility.RoomList;
 import utility.User;
@@ -31,22 +28,21 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import javafx.util.Pair;
 
 public class Server extends Application implements Initializable{
 
-	ExecutorService executorService;
-	ServerSocket serverSocket;
-	List<ToClient> connections = new Vector<ToClient>();
-	int port;
+	private ExecutorService executorService;
+	private ServerSocket serverSocket;
+	private List<ToClient> connections = new Vector<ToClient>();
+	private int port;
 	
-	RoomList rmlst = RoomList.getInstance();
-	UserList usrlst = UserList.getInstance();
+	private RoomList rmlst = RoomList.getInstance();
+	private UserList usrlst = UserList.getInstance();
 	
-	void startServer(){
-		executorService = Executors.newFixedThreadPool(1000);
+	private void startServer(){
+		executorService = Executors.newFixedThreadPool(1234567890);
 		try {
 			serverSocket = new ServerSocket(port);
 		} catch (Exception e) {
@@ -88,8 +84,9 @@ public class Server extends Application implements Initializable{
 			}
 		};
 		executorService.submit(runnable);
-	}	
-	void stopServer(){
+	} // method startServer END
+	
+	private void stopServer(){
 		try {
 			Iterator<ToClient> iterator = connections.iterator();
 			while(iterator.hasNext()){
@@ -108,10 +105,12 @@ public class Server extends Application implements Initializable{
 				btnStartStop.setText("start");
 			});
 		} catch (Exception e) {}
-	}
+	} // method stopServer END
 	
-	class ToClient{
-		Socket socket;
+	private class ToClient{
+		private Socket socket;
+		private Socket rm_socket;
+		private Socket file_socket;
 		private String userID;
 		private String inRoomName;
 
@@ -120,7 +119,7 @@ public class Server extends Application implements Initializable{
 			receive();
 		}
 		
-		void receive(){
+		private void receive(){
 			Runnable runnable = new Runnable() {
 				@Override
 				public void run() {
@@ -146,9 +145,9 @@ public class Server extends Application implements Initializable{
 				}
 			};
 			executorService.submit(runnable);
-		}
+		} // method receive END
 		
-		void send(String protocol, Object data){
+		private void send(String protocol, Object data){
 			Runnable runnable = new Runnable() {
 				@Override
 				public void run() {
@@ -173,34 +172,78 @@ public class Server extends Application implements Initializable{
 				}
 			};
 			executorService.submit(runnable);
+		} // method send END
+		
+		private void broadcast(String protocol, Object data){
+			for(ToClient client:connections)
+				client.send(protocol, data);
 		}
 		
-		void inMessage(String protocol, Object data){
-			
-			if(protocol.equals("LogIn")){
-				boolean lgn_result = usrlst.isOverlapId(data.toString());
-				if(lgn_result) send("LogIn","NO");
-				else {
-					send("LogIn","YES");
-					userID = data.toString();
-					usrlst.addUser(new User(userID));
-					
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					
-					for(ToClient client:connections){
-						if(client!=this) client.send("NewUser", userID);
-						else{
-							send("OldUser", usrlst.getIdList());
-						}
-					}
+		private void broadcastInRoom(String inRoomName, String protocol, String data){
+			for(ToClient client:connections){
+				if(client.getInRoomName().equals(inRoomName) && client!=this){
+					Pair<String, String> msg = new Pair<String, String>(getUserID(), data);
+					client.send(protocol, msg);
 				}
 			}
+		}
+		
+		private void inMessage(String protocol, Object data){
+			if(protocol.equals("LogIn")){
+				String userID = data.toString();
+				login(userID);
+			}
 			else if(protocol.equals("LogOut")){
-				usrlst.removeUserByUserId(data.toString());
+				String userID = data.toString();
+				logout(userID);
+			}
+			else if(protocol.equals("UpdatRoomlst")){
+				send("UpdatRoomlst", rmlst.getSendlst());
+			}
+			else if(protocol.equals("MakePublic")){
+				String inRoomName = data.toString();
+				Room inRoom = new Room(inRoomName);
+				makePublic(inRoom);				
+			}
+			else if(protocol.equals("MakePrivate")){
+				Pair<String, String> pri_rm = (Pair<String, String>) data;
+				Room inRoom = new Room(pri_rm.getKey(),pri_rm.getValue());
+				makePrivate(inRoom);				
+			}
+			else if(protocol.equals("Enterpublic")){
+				String inRoomName = data.toString();
+				Room inRoom = rmlst.getRoomByRoomName(inRoomName);
+				enterPublic(inRoom);
+			}
+			else if(protocol.equals("Enterprivate")){
+				Pair<String, String> pri_rm = (Pair<String, String>) data;
+				String inRoomName = pri_rm.getKey(); String inRoomPW = pri_rm.getValue();
+				Room inRoom = rmlst.getRoomByRoomName(inRoomName);
+				enterPrivate(inRoom, inRoomPW);
+			}
+			else if(protocol.equals("ExitRoom")){
+				exitRoom();
+			}
+			else if(protocol.equals("Message")){
+				broadcastInRoom(getInRoomName(), "Message", data.toString());
+			}
+			else if(protocol.equals("Imoticon")){
+				broadcastInRoom(getInRoomName(), "Imoticon", data.toString());
+			}
+			else if(protocol.equals("File")){
+				
+			}
+		}
+		
+		// Operation //
+		public void login(String userID){
+			boolean lgn_result = usrlst.isOverlapId(userID);
+			
+			if(lgn_result) send("LogIn","NO");
+			else {
+				send("LogIn","YES");
+				setUserID(userID);
+				usrlst.addUser(new User(getUserID()));
 				
 				try {
 					Thread.sleep(1000);
@@ -208,96 +251,145 @@ public class Server extends Application implements Initializable{
 					e.printStackTrace();
 				}
 				
-				for(ToClient client:connections){
-					if(client!=this) client.send("UserOut", data.toString());
-					else client.send("LogOut", "OK");
-				}
-			}
-			else if(protocol.equals("OldRoom") && data.toString().equals("OK")){
-				send("OldRoom", rmlst.getSendlst());
-			}
-			else if(protocol.equals("MakePublic")){
-				boolean rm_result = rmlst.isOverlapRoomName(data.toString());
-				if(rm_result) send("MakePublic","NO");
-				else {
-					send("MakePublic","YES");
-					inRoomName = data.toString();
-					rmlst.addRoom(new PublicRoom(inRoomName));
-					
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					
-					for(ToClient client:connections){
-						Pair<String, Integer> rm = new Pair(inRoomName,rmlst.getRoomByRoomName(inRoomName).getInUserNum());
-						client.send("public", rm);
-					}
-				}
-			}
-			else if(protocol.equals("MakePrivate")){
-				Pair<String, String> pri_rm = (Pair<String, String>) data;
-				boolean rm_result = rmlst.isOverlapRoomName(pri_rm.getKey());
-				if(rm_result) send("MakePrivate","NO");
-				else {
-					send("MakePrivate","YES");
-					inRoomName = pri_rm.getKey();
-					rmlst.addRoom(new PrivateRoom(inRoomName, pri_rm.getValue()));
-					
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					
-					for(ToClient client:connections){
-						Pair<String, Integer> rm = new Pair(inRoomName,rmlst.getRoomByRoomName(inRoomName).getInUserNum());
-						client.send("private", rm);
-					}
-				}
-			}
-			else if(protocol.equals("EnterRoom")){
-				
-			}
-			else if(protocol.equals("ExitRoom")){
-				
-			}
-			else if(protocol.equals("Message")){
-				for(ToClient client:connections){
-					if(client.getInRoomName().equals(inRoomName) /*&& client!=this*/){
-						Pair<String, String> msg = new Pair<String, String>(userID, data.toString());
-						client.send("Message", msg);
-					}
-				}
-			}
-			else if(protocol.equals("Imoticon")){
-				for(ToClient client:connections){
-					if(client.getInRoomName().equals(inRoomName) /*&& client!=this*/){
-						Pair<String, String> msg = new Pair<String, String>(userID, data.toString());
-						client.send("Imoticon", msg);
-					}
-				}
-			}
-			else if(protocol.equals("File")){
-				
+				broadcast("UserListInLobby", usrlst.getIdList());
 			}
 		}
 		
-		// Getter //
+		public void logout(String userID){
+			usrlst.removeUserByUserId(userID);
+			
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			for(ToClient client:connections){
+				if(client!=this) client.send("UserListInLobby", usrlst.getIdList());
+				else client.send("LogOut", null);
+			}
+		}
+
+		public void makePublic(Room inRoom){
+			boolean rm_result = rmlst.isOverlapRoomName(inRoom.getRoomName());
+			if(rm_result) send("MakeRoom","NO");
+			else {
+				send("MakeRoom","YES");
+				setInRoomName(inRoom.getRoomName());
+				inRoom.enterRoom(getUserID());
+				rmlst.addRoom(inRoom);
+				
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+				broadcast("public", inRoom.getRoomName());
+			}
+		}
+
+		public void makePrivate(Room inRoom){
+			boolean rm_result = rmlst.isOverlapRoomName(inRoom.getRoomName());
+			if(rm_result) send("MakeRoom","NO");
+			else {
+				send("MakeRoom","YES");
+				setInRoomName(inRoom.getRoomName());
+				inRoom.enterRoom(getUserID());
+				rmlst.addRoom(inRoom);
+				
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+				broadcast("private", inRoom.getRoomName());
+			}
+		}
+
+		public void enterPublic(Room inRoom){
+			setInRoomName(inRoom.getRoomName());
+			inRoom.enterRoom(getUserID());
+			send("Enterpublic",null);
+			
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			for(ToClient client:connections){
+				if(client.getInRoomName().equals(getInRoomName())){
+					client.send("UserListInRoom", inRoom.getUsrlstInRoom());
+				}
+			}
+		}
+		
+		public void enterPrivate(Room inRoom, String inRoomPW){
+			boolean pw_result = inRoom.checkRoomPW(inRoomPW);
+			if(pw_result) {
+				setInRoomName(inRoom.getRoomName());
+				inRoom.enterRoom(getUserID());
+				send("Enterprivate","YES");
+
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+				for(ToClient client:connections){
+					if(client.getInRoomName().equals(getInRoomName())){
+						client.send("UserListInRoom", inRoom.getUsrlstInRoom());
+					}
+				}
+			}
+			else send("Enterprivate","NO");
+		}
+		
+		public void exitRoom(){
+			Room inRoom = rmlst.getRoomByRoomName(getInRoomName());
+			inRoom.exitRoom(getUserID());
+			
+			send("ExitRoom",null);
+			
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+				
+			for(ToClient client:connections){
+				if(client.getInRoomName().equals(getInRoomName()) && client!=this){
+					client.send("UserListInRoom", inRoom.getUsrlstInRoom());
+				}
+			}
+			
+			setInRoomName(null);
+		}
+		
+		// Getter and Setter //
 		public String getUserID() {
 			return userID;
+		}
+		public void setUserID(String userID){
+			this.userID = userID;
 		}
 		public String getInRoomName() {
 			return inRoomName;
 		}
+		public void setInRoomName(String inRoomName){
+			this.inRoomName = inRoomName;
+		}
+
 	} // class ToClient END
 	
 	/* GUI */
-	@FXML TextArea usrDisplay;
-	@FXML TextArea rmDisplay;
-	@FXML Button btnStartStop;
-	@FXML TextField portInput;
+	@FXML private TextArea usrDisplay;
+	@FXML private TextArea rmDisplay;
+	@FXML private Button btnStartStop;
+	@FXML private TextField portInput;
 	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
